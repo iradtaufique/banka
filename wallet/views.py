@@ -1,26 +1,18 @@
 from rest_framework import generics
 from rest_framework.response import Response
 
-from wallet.serializers import WalletSerializer
+from wallet.serializers import WalletSerializer, WalletTypeSerializer
 
-from .models import Wallet as WalletModel
+from .models import Wallet as WalletModel, WalletType
 
 
-class WalletViewSet(generics.ListAPIView):
-    """
-    Class to handle every interaction with wallet
-    CRUD wallet
-    """
-    # Users must be authenticated before accessing any method in this class
-    # permissions_classes = permissions.IsAuthenticatedOrReadOnly
-    serializer_class = WalletSerializer
-    queryset = WalletModel.objects.all()
+class WalletTypeViewSet(generics.GenericAPIView):
+    serializer_class = WalletTypeSerializer
+    queryset = WalletType.objects.all()
 
     def post(self, request):
-        wallet = self.request.data
-        wallet_data = self.serializer_class(data=wallet)
-        user = self.request.user
-        # wallet_type = self.request.data['wallet_type']
-        wallet_data.is_valid(raise_exception=True)
-        wallet_data.save(user_id=user)
-        return Response(wallet_data)
+        wallet_type = self.request.data
+        serializer = self.serializer_class(data=wallet_type)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
