@@ -6,7 +6,7 @@ from wallet.serializers import WalletSerializer, WalletTypeSerializer
 from .models import Wallet as WalletModel, WalletType
 
 
-class WalletTypeViewSet(generics.GenericAPIView):
+class AddWalletTypeAPIView(generics.GenericAPIView):
     serializer_class = WalletTypeSerializer
     queryset = WalletType.objects.all()
 
