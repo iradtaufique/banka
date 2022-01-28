@@ -17,7 +17,7 @@ class Wallet(models.Model):
     wallet_type_id = models.ForeignKey(WalletType, on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.user_id + ' ' + self.amount
+        return str(self.user_id) + ' ' + str(self.amount)
 
 
 class TransactionType(models.Model):
