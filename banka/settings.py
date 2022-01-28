@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'allauth',
     'drf_yasg',
     'rest_framework',
+    'wallet',
 ]
 
 MIDDLEWARE = [
