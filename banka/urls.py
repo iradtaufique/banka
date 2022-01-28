@@ -27,6 +27,7 @@ urlpatterns = [
 
     # urls for authentications
     path('authentication/', include('authentication.urls')),
+    path('wallet/', include('wallet.urls')),
 
     # urls for swagger documentation
     path('', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),

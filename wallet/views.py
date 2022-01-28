@@ -16,10 +16,6 @@ class WalletViewSet(generics.ListAPIView):
     serializer_class = WalletSerializer
     queryset = WalletModel.objects.all()
 
-    """def create_wallet(self):
-        self.post()
-        return Response(wallet_data)"""
-
     def post(self, request):
         wallet = self.request.data
         wallet_data = self.serializer_class(data=wallet)
