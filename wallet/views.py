@@ -9,8 +9,10 @@ from wallet.serializers import WalletSerializer, WalletTypeSerializer
 from .models import Wallet as WalletModel, WalletType, Wallet
 from django.db.models.signals import post_save, pre_save
 
+User = get_user_model()
 
-class WalletViewSet(generics.GenericAPIView):
+
+class CreateWalletAPIView(generics.GenericAPIView):
     """
     Class to create a wallet
     user must be authenticated
@@ -33,7 +35,24 @@ class WalletViewSet(generics.GenericAPIView):
         return Response(wallet_data.data)
 
 
-class WalletTypeViewSet(generics.GenericAPIView):
+
+class ListWalletAPIView(generics.ListAPIView):
+    """
+    List wallet for authenticated user
+    he must be authenticated
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = WalletSerializer
+    queryset = WalletModel.objects.all()
+
+    def list(self, request, *args, **kwargs):
+        user = self.request.user
+        queryset = WalletModel.objects.filter(user_id=user)
+        serializer = WalletSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+
+class CreateWalletTypeAPIView(generics.GenericAPIView):
     """
     class to create wallet type,
     in case a user want to create another wallet type
@@ -54,9 +73,6 @@ class WalletTypeViewSet(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
-
-
-User = get_user_model()
 
 
 @receiver(post_save, sender=User)
