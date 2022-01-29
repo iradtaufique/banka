@@ -16,6 +16,9 @@ class Wallet(models.Model):
     amount = models.FloatField(default=0)
     wallet_type_id = models.ForeignKey(WalletType, on_delete=models.CASCADE)
 
+    class Meta:
+        unique_together=['user_id', 'wallet_type_id']
+
     def __str__(self):
         return self.user_id + ' ' + self.amount
 
@@ -32,6 +35,7 @@ class Transaction(models.Model):
     transaction_type_id = models.ForeignKey(TransactionType, on_delete=models.CASCADE)
     date = models.DateField(auto_now=True)
     to = models.ForeignKey(User, on_delete=models.CASCADE)
+    description = models.TextField()
 
     def __str__(self):
         return self.wallet_id + 'to ' + self.to
