@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.dispatch import receiver
 from rest_framework import generics, permissions
 from rest_framework.exceptions import ValidationError
+from rest_framework.mixins import UpdateModelMixin
 from rest_framework.response import Response
 
 from wallet.serializers import WalletSerializer, WalletTypeSerializer
@@ -33,6 +34,20 @@ class CreateWalletAPIView(generics.GenericAPIView):
         wallet_data.save(user_id=user)
 
         return Response(wallet_data.data)
+
+
+class UpdateWalletAPIView(generics.GenericAPIView, UpdateModelMixin):
+    """
+    Update wallet
+    user must be authenticated
+    All fields must be submitted
+    """
+    serializer_class = WalletSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = WalletModel.objects.all()
+
+    def put(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
 
 
 
@@ -87,4 +102,5 @@ def create_saving_wallet(sender, instance, **kwargs):
         new_wallet = Wallet(user_id=instance, wallet_type_id=wallet_type, amount=0)
         new_wallet.save()
     except:
+        # TODO solve why a new saving wallet want to be created when user is updated
         raise ValidationError("Unable to create a saving wallet")
