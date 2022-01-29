@@ -7,7 +7,7 @@ class WalletSerializer(serializers.HyperlinkedModelSerializer):
     """
     Serializer for wallet
     """
-    # wallet_type_id = serializers.ChoiceField()
+    wallet_type_id = serializers.PrimaryKeyRelatedField(queryset=WalletType.objects.all())
 
     class Meta:
         model = Wallet
