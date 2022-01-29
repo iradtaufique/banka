@@ -5,10 +5,10 @@ User = get_user_model()
 
 
 class WalletType(models.Model):
-    wallet_type = models.CharField(max_length=30)
+    wallet_type = models.CharField(max_length=30, unique=True)
 
     def __str__(self):
-        return self.wallet_type
+        return self.wallet_type+' '+self.id.__str__()
 
 
 class Wallet(models.Model):
@@ -20,11 +20,11 @@ class Wallet(models.Model):
         unique_together=['user_id', 'wallet_type_id']
 
     def __str__(self):
-        return self.user_id + ' ' + self.amount
+        return self.user_id.__str__()+' ' + self.amount.__str__()
 
 
 class TransactionType(models.Model):
-    transaction_type = models.CharField(max_length=30)
+    transaction_type = models.CharField(max_length=30, unique=True)
 
     def __str__(self):
         return self.transaction_type

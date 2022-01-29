@@ -1,16 +1,19 @@
+from django.contrib.auth import get_user_model
+from django.dispatch import receiver
 from rest_framework import generics, permissions
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from wallet.serializers import WalletSerializer, WalletTypeSerializer
 
-from .models import Wallet as WalletModel, WalletType
+from .models import Wallet as WalletModel, WalletType, Wallet
+from django.db.models.signals import post_save, pre_save
 
 
 class WalletViewSet(generics.GenericAPIView):
     """
-    Class to handle every interaction with wallet
-    CRUD wallet
+    Class to create a wallet
+    user must be authenticated
     """
     # Users must be authenticated before accessing any method in this class
     permissions_classes = permissions.IsAuthenticated
@@ -21,7 +24,7 @@ class WalletViewSet(generics.GenericAPIView):
         wallet = self.request.data
         wallet_data = self.serializer_class(data=wallet)
         user = self.request.user
-        wallet_type = self.request.data['wallet_type']
+        wallet_type = self.request.data['wallet_type_id']
         if WalletModel.objects.filter(user_id=user, wallet_type_id=wallet_type).exists():
             raise ValidationError("This wallet type has been already created for this user")
         wallet_data.is_valid(raise_exception=True)
@@ -29,16 +32,43 @@ class WalletViewSet(generics.GenericAPIView):
 
         return Response(wallet_data.data)
 
-        # return serializer(user_id=self.request.user)
-
 
 class WalletTypeViewSet(generics.GenericAPIView):
+    """
+    class to create wallet type,
+    in case a user want to create another wallet type
+    different from existent wallet type
+    """
     serializer_class = WalletTypeSerializer
     queryset = WalletType.objects.all()
 
     def post(self, request):
         wallet_type = self.request.data
         serializer = self.serializer_class(data=wallet_type)
+
+        # checking if user new wallet type does not exist in database
+        user_wallet_type = wallet_type['wallet_type']
+        if WalletType.objects.filter(wallet_type=user_wallet_type).exists():
+            raise ValidationError("This wallet type already exists, go ahead and create your wallet directly please")
+
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+
+User = get_user_model()
+
+
+@receiver(post_save, sender=User)
+def create_saving_wallet(sender, instance, **kwargs):
+    """
+    A saving wallet will be create automatically for every new user added in the database
+    """
+    try:
+        # TODO ensure that saving wallet_type has been added to the database with the same name
+        # wallet type that will be created first is the saving one
+        wallet_type = WalletType.objects.filter(wallet_type="saving").last()
+        new_wallet = Wallet(user_id=instance, wallet_type_id=wallet_type, amount=0)
+        new_wallet.save()
+    except:
+        raise ValidationError("Unable to create a saving wallet")
