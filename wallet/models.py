@@ -22,7 +22,6 @@ class Wallet(models.Model):
     def __str__(self):
         return self.user_id.__str__()+' ' + self.amount.__str__()
 
-
 class TransactionType(models.Model):
     transaction_type = models.CharField(max_length=30, unique=True)
 
