@@ -28,6 +28,8 @@ class CreateWalletAPIView(generics.GenericAPIView):
         wallet_data = self.serializer_class(data=wallet)
         user = self.request.user
         wallet_type = self.request.data['wallet_type_id']
+        # TODO add a verification of founds in the saving wallet and subtract money in this wallet to add to the
+        #  other one
         if WalletModel.objects.filter(user_id=user, wallet_type_id=wallet_type).exists():
             raise ValidationError("This wallet type has been already created for this user")
         wallet_data.is_valid(raise_exception=True)
@@ -104,3 +106,4 @@ def create_saving_wallet(sender, instance, **kwargs):
     except:
         # TODO solve why a new saving wallet want to be created when user is updated
         raise ValidationError("Unable to create a saving wallet")
+
