@@ -31,7 +31,9 @@ class TransactionSerializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
         model = Transaction
-        fields = ['transaction_type_id', 'wallet_id', 'date', 'to']
+        # We will just allow sending money so no need to add transaction type into fields
+        # But, we will save transaction according to user in views
+        fields = ['wallet_id', 'date', 'to']
 
 
 class TransactionTypeSerializer(serializers.HyperlinkedModelSerializer):

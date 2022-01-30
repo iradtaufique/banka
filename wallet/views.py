@@ -5,9 +5,9 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.mixins import UpdateModelMixin
 from rest_framework.response import Response
 
-from wallet.serializers import WalletSerializer, WalletTypeSerializer
+from wallet.serializers import WalletSerializer, WalletTypeSerializer, TransactionSerializer
 
-from .models import Wallet as WalletModel, WalletType, Wallet
+from .models import Wallet as WalletModel, WalletType, Wallet, Transaction, TransactionType
 from django.db.models.signals import post_save, pre_save
 
 User = get_user_model()
@@ -17,6 +17,8 @@ class CreateWalletAPIView(generics.GenericAPIView):
     """
     Class to create a wallet
     user must be authenticated
+    He will send money from his saving account to the new one
+    He should have sufficient founds in this account thus
     """
     # Users must be authenticated before accessing any method in this class
     permissions_classes = permissions.IsAuthenticated
@@ -106,4 +108,44 @@ def create_saving_wallet(sender, instance, **kwargs):
     except:
         # TODO solve why a new saving wallet want to be created when user is updated
         raise ValidationError("Unable to create a saving wallet")
+
+
+class SendMoneyAPIView(generics.GenericAPIView):
+    """
+    Class for sending money to another user into the system
+    The sender must be authenticated and the owner of the wallet he use
+    He should have enough money in the account he'll use to send money.
+    """
+    # permission_classes = [permissions.IsAuthenticated, IsOwner]
+    serializer_class = TransactionSerializer
+    queryset = Transaction.objects.all()
+
+    def post(self, request):
+        transaction = self.request.data
+        user = self.request.user
+        sender_wallet = WalletModel.objects.filter(user_id=user).last()
+        serializer = self.serializer_class(data=transaction)
+        serializer.is_valid(raise_exception=True)
+        send_to = transaction['to']
+        sending_amount = transaction['amount']
+
+        # removing money from the sender account
+        sender_founds = sender_wallet.amount
+        sender_new_founds = sender_founds - sending_amount
+        sender_wallet.update(amount=sender_new_founds)
+
+        # adding money to the receiver account
+        receiver_wallet = WalletModel.objects.filter(user_id=send_to).last()
+        receiver_founds = receiver_wallet.amount
+        receiver_new_founds = receiver_founds + sending_amount
+        receiver_wallet.update(amount=receiver_new_founds)
+
+        # Retrieving transaction type into database
+        transaction_send_type = TransactionType.objects.filter(transaction_type="send")
+
+        # saving transaction
+        serializer.save(wallet_id=sender_wallet, transaction_type=transaction_send_type, to=receiver_wallet)
+        # TODO do we really need transaction type model ? Because we are just allowing sending transaction or should
+        #  we include receiving transaction also ?
+
 
