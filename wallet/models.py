@@ -21,7 +21,9 @@ class Wallet(models.Model):
         unique_together=['user_id', 'wallet_type_id']
 
     def __str__(self):
-        return self.user_id.__str__()+' ' + self.amount.__str__()
+        user = User.objects.get(email=self.user_id)
+        wallet_type = WalletType.objects.get(pk=self.wallet_type_id.pk)
+        return user.__str__()
 
 class TransactionType(models.Model):
     transaction_type = models.CharField(max_length=30, unique=True)
@@ -34,8 +36,12 @@ class Transaction(models.Model):
     wallet_id = models.ForeignKey(Wallet, on_delete=models.CASCADE)
     transaction_type_id = models.ForeignKey(TransactionType, on_delete=models.CASCADE)
     date = models.DateField(auto_now=True)
-    to = models.ForeignKey(User, on_delete=models.CASCADE)
+    to = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name="send_to")
     description = models.TextField()
+    amount = models.FloatField(blank=False, null=False)
 
     def __str__(self):
-        return self.wallet_id + 'to ' + self.to
+        sender_email = self.wallet_id.user_id
+        send_from = User.objects.get(email=sender_email)
+        send_to = User.objects.get(email=self.to.user_id)
+        return 'from: '+str(send_from)+'to '+str(send_to)+' Type: '+self.transaction_type_id.transaction_type

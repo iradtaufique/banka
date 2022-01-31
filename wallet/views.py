@@ -26,7 +26,7 @@ class CreateWalletAPIView(generics.GenericAPIView):
     """
     # Users must be authenticated before accessing any method in this class
     # permissions_classes = permissions.IsAuthenticated
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsWalletOwner]
     serializer_class = WalletSerializer
     queryset = WalletModel.objects.all()
 
@@ -57,6 +57,7 @@ class UpdateWalletAPIView(generics.RetrieveUpdateAPIView):
 
     def perform_update(self, serializer):
         return serializer.save(user_id=self.request.user)
+
 
 class ListWalletAPIView(generics.ListAPIView):
     """
@@ -98,7 +99,6 @@ class CreateWalletTypeAPIView(generics.GenericAPIView):
         return Response(serializer.data)
 
 
-
 # @receiver(post_save, sender=User)
 # def create_saving_wallet(sender, instance, **kwargs):
 #     """
@@ -121,51 +121,63 @@ class SendMoneyAPIView(generics.GenericAPIView):
     The sender must be authenticated and the owner of the wallet he use
     He should have enough money in the account he'll use to send money.
     """
-    # permission_classes = [permissions.IsAuthenticated, IsOwner]
+    permission_classes = [permissions.IsAuthenticated, IsWalletOwner]
     serializer_class = TransactionSerializer
     queryset = Transaction.objects.all()
 
     def post(self, request):
         transaction = self.request.data
         user = self.request.user
-        sender_wallet = WalletModel.objects.filter(user_id=user).last()
+        # Retrieving saving wallet type
+        saving_wallet = WalletType.objects.get(wallet_type='saving')
+
+        # Getting data
+        sender_wallet = WalletModel.objects.get(user_id=user, wallet_type_id=saving_wallet.pk)
         serializer = self.serializer_class(data=transaction)
         serializer.is_valid(raise_exception=True)
         send_to = transaction['to']
-        sending_amount = transaction['amount']
+        sending_amount = float(transaction['amount'])
+
+        # Verifying if the sender has sufficient found
+        if sender_wallet.amount < sending_amount:
+            raise ValidationError("Insufficient founds. Please charge your account and try again.")
+
+        # Verifying if user sends money to his account
+        if sender_wallet.user_id == user:
+            raise ValidationError("Cannot send money to your account. To send to one of your wallets, please refer to "
+                                  "the good link")
 
         # removing money from the sender account
-        sender_founds = sender_wallet.amount
+        sender_founds = sender_wallet.amount.__float__()
         sender_new_founds = sender_founds - sending_amount
-        sender_wallet.update(amount=sender_new_founds)
+        WalletModel.objects.filter(user_id=user, wallet_type_id=1).update(amount=sender_new_founds)
 
         # adding money to the receiver account
-        receiver_wallet = WalletModel.objects.filter(user_id=send_to).last()
+        receiver_wallet = WalletModel.objects.get(user_id=send_to, wallet_type_id=saving_wallet.pk)
         receiver_founds = receiver_wallet.amount
         receiver_new_founds = receiver_founds + sending_amount
-        receiver_wallet.update(amount=receiver_new_founds)
+        WalletModel.objects.filter(user_id=send_to, wallet_type_id=saving_wallet.pk).update(amount=receiver_new_founds)
 
         # Retrieving transaction type into database
-        transaction_send_type = TransactionType.objects.filter(transaction_type="send")
+        transaction_send_type = TransactionType.objects.get(transaction_type="send")
 
         # saving transaction
-        serializer.save(wallet_id=sender_wallet, transaction_type=transaction_send_type, to=receiver_wallet)
-        # TODO do we really need transaction type model ? Because we are just allowing sending transaction or should
-        #  we include receiving transaction also ?
+        serializer.save(wallet_id=sender_wallet, transaction_type_id=transaction_send_type, to=receiver_wallet)
+
+        return Response(serializer.data)
 
 
-# @receiver(post_save, sender=User)
-# def create_saving_wallet(sender, instance, **kwargs):
-#     """
-#     A saving wallet will be created automatically for every new user added in the database
-#     """
-#     try:
-#         # TODO ensure that saving wallet_type has been added to the database with the same name
-#         # wallet type that will be created first is the saving one
-#         wallet_type = WalletType.objects.filter(wallet_type="saving").last()
-#         new_wallet = Wallet(user_id=instance, wallet_type_id=wallet_type, amount=0)
-#         new_wallet.save()
-#     except:
-#         # TODO solve why a new saving wallet want to be created when user is updated
-#         raise ValidationError("Unable to create a saving wallet")
-
+@receiver(post_save, sender=User)
+def create_saving_wallet(sender, instance, **kwargs):
+    """
+    A saving wallet will be created automatically for every new user added in the database
+    """
+    try:
+        # TODO ensure that saving wallet_type has been added to the database with the same name
+        # wallet type that will be created first is the saving one
+        wallet_type = WalletType.objects.filter(wallet_type="saving").last()
+        new_wallet = Wallet(user_id=instance, wallet_type_id=wallet_type, amount=0)
+        new_wallet.save()
+    except:
+        # TODO solve why a new saving wallet want to be created when user is updated
+        raise ValidationError("Unable to create a saving wallet")
