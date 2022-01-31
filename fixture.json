@@ -1,0 +1,9 @@
+[
+  {
+    "model": "wallet.wallettype",
+    "pk": 1,
+    "fields": {
+     "wallet_type": "saving"
+    }
+  }
+]
