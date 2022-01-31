@@ -49,7 +49,7 @@ class Transaction(models.Model):
     wallet_id = models.ForeignKey(Wallet, on_delete=models.CASCADE)
     transaction_type_id = models.ForeignKey(TransactionType, on_delete=models.CASCADE)
     date = models.DateField(auto_now=True)
-    to = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name="send_to")
+    to = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name="send_to", verbose_name='Send to')
     description = models.TextField()
     amount = models.FloatField(blank=False, null=False)
 
