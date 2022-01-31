@@ -197,7 +197,7 @@ def create_saving_wallet(sender, instance, **kwargs):
     """
     try:
         # wallet type that will be created first is the saving one
-        wallet_type = WalletType.objects.filter(wallet_type="saving").last()
+        wallet_type = WalletType.objects.get(wallet_type="saving")
         new_wallet = Wallet(user_id=instance, wallet_type_id=wallet_type, amount=0)
         new_wallet.save()
     except:

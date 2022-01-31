@@ -37,9 +37,11 @@ class TransactionSerializer(serializers.HyperlinkedModelSerializer):
     """
     Serializer for Transaction
     """
-    #    wallet = Wallet.objects.get(user_id=get_user())
-    saving_wallet = WalletType.objects.get(wallet_type='saving')
-    to = serializers.PrimaryKeyRelatedField(queryset=Wallet.objects.filter(wallet_type_id=saving_wallet))
+
+    if not WalletType.DoesNotExist:
+        if WalletType.objects.filter(wallet_type="saving").exists():
+            saving_wallet = WalletType.objects.get(wallet_type="saving")
+            to = serializers.PrimaryKeyRelatedField(queryset=Wallet.objects.filter(wallet_type_id=saving_wallet))
 
     class Meta:
         model = Transaction
