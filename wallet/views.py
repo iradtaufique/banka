@@ -40,12 +40,16 @@ class CreateWalletAPIView(generics.GenericAPIView):
         # Verifying if there is sufficient found in saving wallet before moving the amount to the new wallet
         # Retrieving saving wallet type
         saving_wallet = WalletType.objects.get(wallet_type='saving')
-        if WalletModel.objects.get(user_id=user, wallet_type_id=saving_wallet.pk).amount < float(self.request.data['amount']):
+        if WalletModel.objects.get(user_id=user, wallet_type_id=saving_wallet.pk).amount < float(
+                self.request.data['amount']):
             raise ValidationError("Insufficient found in your saving account, please add money in it")
         if WalletModel.objects.filter(user_id=user, wallet_type_id=wallet_type).exists():
             raise ValidationError("This wallet type has been already created for this user")
         wallet_data.is_valid(raise_exception=True)
-        wallet_data.save(user_id=user)
+        try:
+            wallet_data.save(user_id=user)
+        except ValueError:
+            raise ValidationError("An error occurred while saving data: "+ValueError)
 
         return Response(wallet_data.data)
 
@@ -61,8 +65,10 @@ class UpdateWalletAPIView(generics.RetrieveUpdateAPIView):
     queryset = WalletModel.objects.all()
 
     def perform_update(self, serializer):
-        return serializer.save(user_id=self.request.user)
-
+        try:
+            return serializer.save(user_id=self.request.user)
+        except ValueError:
+            raise ValidationError("error: "+ValueError)
 
 class ListWalletAPIView(generics.ListAPIView):
     """

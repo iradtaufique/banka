@@ -16,6 +16,10 @@ class WalletSerializer(serializers.HyperlinkedModelSerializer):
         model = Wallet
         fields = ['wallet_type_id', 'amount']
 
+    def validate(self, data):
+        if float(data['amount']) < 0:
+            raise serializers.ValidationError('The amount cannot be negative')
+
 
 class WalletTypeSerializer(serializers.HyperlinkedModelSerializer):
     """"
@@ -38,6 +42,10 @@ class TransactionSerializer(serializers.HyperlinkedModelSerializer):
         # We will just allow sending money so no need to add transaction type into fields
         # But, we will save transaction according to user in views
         fields = ['amount', 'date', 'to']
+
+    def validate(self, data):
+        if float(data['amount']) < 0:
+            raise serializers.ValidationError('The amount cannot be negative')
 
 
 class TransactionTypeSerializer(serializers.HyperlinkedModelSerializer):

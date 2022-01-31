@@ -11,6 +11,10 @@ class WalletType(models.Model):
     def __str__(self):
         return self.wallet_type+' '+self.id.__str__()
 
+    def validate_unique(self, exclude=None):
+        if not self.wallet_type.isalpha():
+            raise ValueError("wallet type should be a alpha type")
+
 
 class Wallet(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -18,18 +22,27 @@ class Wallet(models.Model):
     wallet_type_id = models.ForeignKey(WalletType, on_delete=models.CASCADE)
 
     class Meta:
-        unique_together=['user_id', 'wallet_type_id']
+        unique_together = ['user_id', 'wallet_type_id']
 
     def __str__(self):
         user = User.objects.get(email=self.user_id)
         wallet_type = WalletType.objects.get(pk=self.wallet_type_id.pk)
         return user.__str__()
 
+    def validate_unique(self, exclude=None):
+        if self.amount < 0:
+            raise ValueError("The amount cannot be bellow zero")
+
+
 class TransactionType(models.Model):
     transaction_type = models.CharField(max_length=30, unique=True)
 
     def __str__(self):
         return self.transaction_type
+
+    def validate_unique(self, exclude=None):
+        if not self.transaction_type.isalpha():
+            raise ValueError("transaction type should be a alpha type")
 
 
 class Transaction(models.Model):
@@ -45,3 +58,7 @@ class Transaction(models.Model):
         send_from = User.objects.get(email=sender_email)
         send_to = User.objects.get(email=self.to.user_id)
         return 'from: '+str(send_from)+'to '+str(send_to)+' Type: '+self.transaction_type_id.transaction_type
+
+    def validate_unique(self, exclude=None):
+        if self.amount < 0:
+            raise ValueError("The amount cannot be bellow zero")
