@@ -2,6 +2,8 @@
 from django.core.mail import EmailMessage
 from django.db import connection
 
+from wallet.models import Notification
+
 
 class Util:
     @staticmethod
@@ -11,3 +13,6 @@ class Util:
 
     def db_table_exists(table_name):
         return table_name in connection.introspection.table_names()
+
+    def save_notification(user, amount, content, transaction_from, ):
+        Notification(user=user, transaction_from=transaction_from, received_amount=amount, content=content, sent=False).save()

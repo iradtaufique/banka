@@ -159,6 +159,10 @@ class SendMoneyAPIView(generics.GenericAPIView):
         # Retrieving transaction type into database
         transaction_send_type = TransactionType.objects.get(transaction_type="send")
 
+        # Adding a notification to user
+        receiver_user = User.objects.get(pk=send_to)
+        Util.save_notification(receiver_user, sending_amount, "You've received money", user)
+
         # saving transaction
         serializer.save(wallet_id=sender_wallet, transaction_type_id=transaction_send_type, to=receiver_wallet)
 
