@@ -9,7 +9,7 @@ class WalletType(models.Model):
     wallet_type = models.CharField(max_length=30, unique=True)
 
     def __str__(self):
-        return self.wallet_type+' '+self.id.__str__()
+        return self.wallet_type + ' ' + self.id.__str__()
 
     def validate_unique(self, exclude=None):
         if not self.wallet_type.isalpha():
@@ -32,6 +32,7 @@ class Wallet(models.Model):
     def validate_unique(self, exclude=None):
         if self.amount < 0:
             raise ValueError("The amount cannot be bellow zero")
+
 
 
 class TransactionType(models.Model):
@@ -62,3 +63,8 @@ class Transaction(models.Model):
     def validate_unique(self, exclude=None):
         if self.amount < 0:
             raise ValueError("The amount cannot be bellow zero")
+
+
+class AddMoneyToWallet(models.Model):
+    names = models.CharField(max_length=30)
+    amount = models.IntegerField()

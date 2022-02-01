@@ -1,14 +1,23 @@
+from django.shortcuts import render, redirect
+
 from django.contrib.auth import get_user_model
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from rest_framework import generics, permissions
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
+from rest_framework.views import APIView
+import requests
+from django.db.models.signals import post_save, pre_save
+
+from .payments import process_payment
 
 from authentication.models import User
-from wallet.serializers import WalletSerializer, WalletTypeSerializer, TransactionSerializer, TransactionListSerializer
+from wallet.serializers import WalletSerializer, WalletTypeSerializer, TransactionSerializer, TransactionListSerializer, AddMoneyToWalletSerializer
 from .models import Wallet as WalletModel, WalletType, Wallet, Transaction, TransactionType
 from .permissions import IsWalletOwner
+from django.views.decorators.http import require_http_methods
+from django.http import HttpResponse
 
 
 
@@ -110,6 +119,46 @@ class CreateWalletTypeAPIView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+
+class AddMoneyToWalletApiView(APIView):
+    serializer_class = AddMoneyToWalletSerializer
+    permission_classes = [permissions.IsAuthenticated, IsWalletOwner]
+
+    def post(self, request):
+        serializer = AddMoneyToWalletSerializer(data=self.request.data)
+        if serializer.is_valid():
+            amount = serializer.validated_data['amount']
+            name = serializer.validated_data['names']
+
+            """getting saving wallet from walletType"""
+            saving_wallet = WalletType.objects.get(wallet_type='saving')
+            """get user saving wallet"""
+            user_saving_wallet = Wallet.objects.filter(user_id=request.user).get(wallet_type_id=saving_wallet)
+            saving_object = Wallet.objects.filter(user_id=request.user).filter(wallet_type_id=saving_wallet)
+            current_amount = user_saving_wallet.amount
+            new_amount = current_amount + amount
+            saving_object.update(amount=new_amount)
+
+            serializer.save()
+            print(process_payment(name, amount))
+            redirect_link = process_payment(name, amount)
+            return redirect(redirect_link)
+
+        return Response(serializer.errors)
+
+
+@require_http_methods(['GET', 'POST'])
+def payment_response(request):
+    status=request.GET.get('status', None)
+    tx_ref=request.GET.get('tx_ref', None)
+    amount=request.GET.get('amount', None)
+    currency=request.GET.get('currency', None)
+
+    print(status)
+    print(tx_ref)
+
+    return HttpResponse('Finished')
 
 
 class SendMoneyAPIView(generics.GenericAPIView):
