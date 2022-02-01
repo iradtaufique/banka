@@ -1,16 +1,17 @@
 from django.contrib.auth import get_user_model
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
+from django.http import HttpResponse
 from rest_framework import generics, permissions
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from authentication.models import User
-from wallet.serializers import WalletSerializer, WalletTypeSerializer, TransactionSerializer, TransactionListSerializer
-from .models import Wallet as WalletModel, WalletType, Wallet, Transaction, TransactionType
+from authentication.utils import Util
+from wallet.serializers import WalletSerializer, WalletTypeSerializer, TransactionSerializer, TransactionListSerializer, \
+    NotificationListSerializer, NotificationUpdateSerializer
+from .models import Wallet as WalletModel, WalletType, Wallet, Transaction, TransactionType, Notification
 from .permissions import IsWalletOwner
-
-
 
 
 class CreateWalletAPIView(generics.GenericAPIView):
@@ -46,7 +47,7 @@ class CreateWalletAPIView(generics.GenericAPIView):
         wallet_data.is_valid(raise_exception=True)
         try:
             user_saving_wallet = WalletModel.objects.filter(user_id=user, wallet_type_id=saving_wallet.pk)
-            user_saving_wallet_new_amount = float(user_saving_wallet.last().amount)-float(self.request.data['amount'])
+            user_saving_wallet_new_amount = float(user_saving_wallet.last().amount) - float(self.request.data['amount'])
             user_saving_wallet.update(amount=user_saving_wallet_new_amount)
             wallet_data.save(user_id=user)
         except ValueError:
@@ -209,3 +210,18 @@ def create_saving_wallet(sender, instance, created, **kwargs):
                     new_wallet.save()
         except:
             raise ValidationError("Unable to create a saving wallet")
+
+
+class ListUserNotificationAPIView(generics.ListAPIView):
+    """
+    List all new notification of logged-in user
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = Notification.objects.all()
+    serializer_class = NotificationListSerializer
+
+    def list(self, request, *args, **kwargs):
+        user = self.request.user
+        notifications = Notification.objects.filter(user=user, sent=False)
+        serializer = NotificationListSerializer(notifications, many=True)
+        return Response(serializer.data)
