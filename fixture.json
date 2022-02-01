@@ -5,5 +5,19 @@
     "fields": {
      "wallet_type": "saving"
     }
+  },
+  {
+    "model": "wallet.transactiontype",
+    "pk": 1,
+    "fields": {
+      "transaction_type": "send"
+    }
+  },
+  {
+    "model": "wallet.transactiontype",
+    "pk": 2,
+    "fields": {
+     "transaction_type": "receive"
+    }
   }
 ]
