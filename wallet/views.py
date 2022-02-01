@@ -3,6 +3,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import get_user_model
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
+from django.http import HttpResponse
 from rest_framework import generics, permissions
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
@@ -13,13 +14,13 @@ from django.db.models.signals import post_save, pre_save
 from .payments import process_payment
 
 from authentication.models import User
-from wallet.serializers import WalletSerializer, WalletTypeSerializer, TransactionSerializer, TransactionListSerializer, AddMoneyToWalletSerializer
-from .models import Wallet as WalletModel, WalletType, Wallet, Transaction, TransactionType
+from authentication.utils import Util
+from wallet.serializers import WalletSerializer, WalletTypeSerializer, TransactionSerializer, TransactionListSerializer, \
+    NotificationListSerializer, NotificationUpdateSerializer, AddMoneyToWalletSerializer
+from .models import Wallet as WalletModel, WalletType, Wallet, Transaction, TransactionType, Notification
 from .permissions import IsWalletOwner
 from django.views.decorators.http import require_http_methods
 from django.http import HttpResponse
-
-
 
 
 class CreateWalletAPIView(generics.GenericAPIView):
@@ -55,7 +56,7 @@ class CreateWalletAPIView(generics.GenericAPIView):
         wallet_data.is_valid(raise_exception=True)
         try:
             user_saving_wallet = WalletModel.objects.filter(user_id=user, wallet_type_id=saving_wallet.pk)
-            user_saving_wallet_new_amount = float(user_saving_wallet.last().amount)-float(self.request.data['amount'])
+            user_saving_wallet_new_amount = float(user_saving_wallet.last().amount) - float(self.request.data['amount'])
             user_saving_wallet.update(amount=user_saving_wallet_new_amount)
             wallet_data.save(user_id=user)
         except ValueError:
@@ -207,6 +208,10 @@ class SendMoneyAPIView(generics.GenericAPIView):
         # Retrieving transaction type into database
         transaction_send_type = TransactionType.objects.get(transaction_type="send")
 
+        # Adding a notification to user
+        receiver_user = User.objects.get(pk=send_to)
+        Util.save_notification(receiver_user, sending_amount, "You've received money", user)
+
         # saving transaction
         serializer.save(wallet_id=sender_wallet, transaction_type_id=transaction_send_type, to=receiver_wallet)
 
@@ -258,3 +263,38 @@ def create_saving_wallet(sender, instance, created, **kwargs):
                     new_wallet.save()
         except:
             raise ValidationError("Unable to create a saving wallet")
+
+
+class ListUserNotificationAPIView(generics.ListAPIView):
+    """
+    List all new notification of logged-in user
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = Notification.objects.all()
+    serializer_class = NotificationListSerializer
+
+    def list(self, request, *args, **kwargs):
+        user = self.request.user
+        notifications = Notification.objects.filter(user=user, sent=False)
+        serializer = NotificationListSerializer(notifications, many=True)
+        return Response(serializer.data)
+
+
+class UpdateNotificationAPIView(generics.RetrieveUpdateAPIView):
+    """
+    When all new notifications have been retrieve and showed to user,
+    this class should be called to update notification status.
+    It's interesting to do it using AJAX
+    so that user can use the app without interruption
+    user must be authenticated
+    this requires the pk of the notification.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = Notification.objects.all()
+    serializer_class = NotificationUpdateSerializer
+
+    def perform_update(self, serializer):
+        try:
+            return serializer.save(sent=True)
+        except ValueError:
+            raise ValidationError("error: " + ValueError.__str__())

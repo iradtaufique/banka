@@ -4,7 +4,11 @@ from rest_framework import serializers
 
 from wallet.models import Wallet, WalletType, Transaction, TransactionType, AddMoneyToWallet
 from authentication.utils import Util
+<<<<<<< HEAD
+from wallet.models import Wallet, WalletType, Transaction, TransactionType, Notification
+=======
 
+>>>>>>> 36f78e86be1f6b387a19ffcf29a4a2ca8e9b2ce4
 
 User = get_user_model()
 
@@ -87,3 +91,20 @@ class TransactionListSerializer(serializers.HyperlinkedModelSerializer):
         model = Transaction
         fields = ['amount', 'date', 'wallet_id', 'to', 'transaction_type_id']
 
+<<<<<<< HEAD
+
+class NotificationListSerializer(serializers.HyperlinkedModelSerializer):
+    transaction_from = serializers.CharField(source='transaction_from.email')
+    class Meta:
+        model = Notification
+        fields = ['created', 'content', 'transaction_from', 'received_amount', 'pk']
+
+
+class NotificationUpdateSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = Notification
+        fields = []
+
+
+=======
+>>>>>>> 36f78e86be1f6b387a19ffcf29a4a2ca8e9b2ce4

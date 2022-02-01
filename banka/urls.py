@@ -8,6 +8,7 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 
+import wallet.views
 
 schema_view = get_schema_view(
    openapi.Info(
@@ -24,6 +25,8 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('notifications/', wallet.views.ListUserNotificationAPIView.as_view()),
+    path('notification-update/<int:pk>', wallet.views.UpdateNotificationAPIView.as_view()),
 
     # urls for authentications
     path('authentication/', include('authentication.urls')),
