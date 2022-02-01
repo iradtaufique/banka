@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from wallet.models import Wallet, WalletType, Transaction, TransactionType
+from wallet.models import Wallet, WalletType, Transaction, TransactionType, AddMoneyToWallet
 
 
 class WalletSerializer(serializers.HyperlinkedModelSerializer):
@@ -42,3 +42,10 @@ class TransactionTypeSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = TransactionType
         fields = ['transaction_type']
+
+
+class AddMoneyToWalletSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = AddMoneyToWallet
+        fields = ['names', 'amount']

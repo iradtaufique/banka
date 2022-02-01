@@ -9,7 +9,7 @@ class WalletType(models.Model):
     wallet_type = models.CharField(max_length=30, unique=True)
 
     def __str__(self):
-        return self.wallet_type+' '+self.id.__str__()
+        return self.wallet_type + ' ' + self.id.__str__()
 
 
 class Wallet(models.Model):
@@ -18,10 +18,11 @@ class Wallet(models.Model):
     wallet_type_id = models.ForeignKey(WalletType, on_delete=models.CASCADE)
 
     class Meta:
-        unique_together=['user_id', 'wallet_type_id']
+        unique_together = ['user_id', 'wallet_type_id']
 
     def __str__(self):
-        return self.user_id.__str__()+' ' + self.amount.__str__()
+        return self.user_id.__str__() + ' ' + self.amount.__str__()
+
 
 class TransactionType(models.Model):
     transaction_type = models.CharField(max_length=30, unique=True)
@@ -39,3 +40,8 @@ class Transaction(models.Model):
 
     def __str__(self):
         return self.wallet_id + 'to ' + self.to
+
+
+class AddMoneyToWallet(models.Model):
+    names = models.CharField(max_length=30)
+    amount = models.IntegerField()
