@@ -26,7 +26,7 @@ schema_view = get_schema_view(
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('notifications/', wallet.views.ListUserNotificationAPIView.as_view()),
-    #path('notification-update/', wallet.views.UpdateNotificationAPIView.as_view()),
+    path('notification-update/<int:pk>', wallet.views.UpdateNotificationAPIView.as_view()),
 
     # urls for authentications
     path('authentication/', include('authentication.urls')),

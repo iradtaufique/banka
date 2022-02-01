@@ -88,5 +88,9 @@ class NotificationListSerializer(serializers.HyperlinkedModelSerializer):
         fields = ['created', 'content', 'transaction_from', 'received_amount', 'pk']
 
 
+class NotificationUpdateSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = Notification
+        fields = []
 
 

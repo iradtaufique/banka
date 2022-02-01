@@ -225,3 +225,23 @@ class ListUserNotificationAPIView(generics.ListAPIView):
         notifications = Notification.objects.filter(user=user, sent=False)
         serializer = NotificationListSerializer(notifications, many=True)
         return Response(serializer.data)
+
+
+class UpdateNotificationAPIView(generics.RetrieveUpdateAPIView):
+    """
+    When all new notifications have been retrieve and showed to user,
+    this class should be called to update notification status.
+    It's interesting to do it using AJAX
+    so that user can use the app without interruption
+    user must be authenticated
+    this requires the pk of the notification.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = Notification.objects.all()
+    serializer_class = NotificationUpdateSerializer
+
+    def perform_update(self, serializer):
+        try:
+            return serializer.save(sent=True)
+        except ValueError:
+            raise ValidationError("error: " + ValueError.__str__())
