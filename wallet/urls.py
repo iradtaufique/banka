@@ -1,12 +1,15 @@
 from django.urls import path
 from wallet import views
-from wallet.views import AddMoneyToWalletApiView
+
 
 urlpatterns = [
-    path('create/', views.CreateWalletAPIView.as_view(), name="Create_wallet"),
-    path('type/', views.CreateWalletTypeAPIView.as_view(), name="Add_wallet_type"),
-    path('list/', views.ListWalletAPIView.as_view(), name="List_wallet"),
-    path('update/<int:pk>', views.UpdateWalletAPIView.as_view(), name="Update_wallet"),
+
+    path('create/', views.CreateWalletAPIView.as_view(), name="create_wallet"),
+    path('type/', views.CreateWalletTypeAPIView.as_view(), name="add_wallet_type"),
+    path('list/', views.ListWalletAPIView.as_view(), name="list_wallet"),
+    path('send-money/', views.SendMoneyAPIView.as_view(), name="send_money"),
+    path('update/<int:pk>', views.UpdateWalletAPIView.as_view(), name="update_wallet"),
+    path('transactions-list/', views.ListTransactionAPIView.as_view(), name="List_of_transactions"),
     path('callback', views.payment_response, name="payment_response"),
 
     # adding money to wallet
