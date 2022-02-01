@@ -2,8 +2,9 @@ from django.contrib.auth import get_user_model
 from django.db import connection
 from rest_framework import serializers
 
+from wallet.models import Wallet, WalletType, Transaction, TransactionType, AddMoneyToWallet
 from authentication.utils import Util
-from wallet.models import Wallet, WalletType, Transaction, TransactionType
+
 
 User = get_user_model()
 
@@ -68,6 +69,12 @@ class TransactionTypeSerializer(serializers.HyperlinkedModelSerializer):
         fields = ['transaction_type']
 
 
+class AddMoneyToWalletSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = AddMoneyToWallet
+        fields = ['names', 'amount']
+
 class TransactionListSerializer(serializers.HyperlinkedModelSerializer):
     """
     Serializer for Transaction List only
@@ -79,5 +86,4 @@ class TransactionListSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Transaction
         fields = ['amount', 'date', 'wallet_id', 'to', 'transaction_type_id']
-
 
