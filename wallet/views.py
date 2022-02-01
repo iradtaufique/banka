@@ -5,11 +5,12 @@ from rest_framework import generics, permissions
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
+from authentication.models import User
 from wallet.serializers import WalletSerializer, WalletTypeSerializer, TransactionSerializer, TransactionListSerializer
 from .models import Wallet as WalletModel, WalletType, Wallet, Transaction, TransactionType
 from .permissions import IsWalletOwner
 
-User = get_user_model()
+
 
 
 class CreateWalletAPIView(generics.GenericAPIView):
@@ -132,6 +133,7 @@ class SendMoneyAPIView(generics.GenericAPIView):
         serializer = self.serializer_class(data=transaction)
         serializer.is_valid(raise_exception=True)
         send_to = transaction['to']
+        receiver_wallet = WalletModel.objects.get(user_id=send_to, wallet_type_id=saving_wallet.pk)
         sending_amount = float(transaction['amount'])
 
         # Verifying if the sender has sufficient found
@@ -139,7 +141,7 @@ class SendMoneyAPIView(generics.GenericAPIView):
             raise ValidationError("Insufficient founds. Please charge your account and try again.")
 
         # Verifying if user sends money to his account
-        if sender_wallet.user_id == user:
+        if receiver_wallet.user_id == user:
             raise ValidationError("Cannot send money to your account. To send to one of your wallets, please refer to "
                                   "the good link")
 
@@ -149,7 +151,6 @@ class SendMoneyAPIView(generics.GenericAPIView):
         WalletModel.objects.filter(user_id=user, wallet_type_id=1).update(amount=sender_new_founds)
 
         # adding money to the receiver account
-        receiver_wallet = WalletModel.objects.get(user_id=send_to, wallet_type_id=saving_wallet.pk)
         receiver_founds = receiver_wallet.amount
         receiver_new_founds = receiver_founds + sending_amount
         WalletModel.objects.filter(user_id=send_to, wallet_type_id=saving_wallet.pk).update(amount=receiver_new_founds)
@@ -161,10 +162,6 @@ class SendMoneyAPIView(generics.GenericAPIView):
         serializer.save(wallet_id=sender_wallet, transaction_type_id=transaction_send_type, to=receiver_wallet)
 
         return Response(serializer.data)
-
-
-#class SendMoneyToMyWalletAPIView(generics.GenericAPIView):
-
 
 
 class ListTransactionAPIView(generics.ListAPIView):
@@ -198,7 +195,16 @@ def create_saving_wallet(sender, instance, **kwargs):
     try:
         # wallet type that will be created first is the saving one
         wallet_type = WalletType.objects.get(wallet_type="saving")
-        new_wallet = Wallet(user_id=instance, wallet_type_id=wallet_type, amount=0)
-        new_wallet.save()
+        print('instance: ', instance)
+
+        # Verifying if the user is authenticated before saving
+        if instance:
+            wallet_exists = Wallet.objects.filter(user_id=instance, wallet_type_id=wallet_type)
+            new_wallet = Wallet(user_id=instance, wallet_type_id=wallet_type, amount=0)
+
+            if wallet_exists:
+                wallet_exists.update(user_id=instance, wallet_type_id=wallet_type, amount=0)
+            else:
+                new_wallet.save()
     except:
         raise ValidationError("Unable to create a saving wallet")

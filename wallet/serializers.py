@@ -1,7 +1,8 @@
 from django.contrib.auth import get_user_model
+from django.db import connection
 from rest_framework import serializers
 
-
+from authentication.utils import Util
 from wallet.models import Wallet, WalletType, Transaction, TransactionType
 
 User = get_user_model()
@@ -37,11 +38,13 @@ class TransactionSerializer(serializers.HyperlinkedModelSerializer):
     """
     Serializer for Transaction
     """
-
-    if not WalletType.DoesNotExist:
+    # Before accessing WalletType model here, we need to check if its table exists to avoid having exceptions
+    table_name = "wallet_wallettype"
+    if Util.db_table_exists(table_name):
         if WalletType.objects.filter(wallet_type="saving").exists():
             saving_wallet = WalletType.objects.get(wallet_type="saving")
             to = serializers.PrimaryKeyRelatedField(queryset=Wallet.objects.filter(wallet_type_id=saving_wallet))
+
 
     class Meta:
         model = Transaction
@@ -76,3 +79,5 @@ class TransactionListSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Transaction
         fields = ['amount', 'date', 'wallet_id', 'to', 'transaction_type_id']
+
+
