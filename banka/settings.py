@@ -46,12 +46,14 @@ INSTALLED_APPS = [
     'drf_yasg',
     'rest_framework',
     'wallet',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -75,6 +77,12 @@ TEMPLATES = [
             ],
         },
     },
+]
+
+# Django Cors header configurations
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
 ]
 
 WSGI_APPLICATION = 'banka.wsgi.application'
