@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from rest_framework import generics, permissions
 from rest_framework.exceptions import ValidationError
@@ -186,25 +186,26 @@ class ListTransactionAPIView(generics.ListAPIView):
 
 
 @receiver(post_save, sender=User)
-def create_saving_wallet(sender, instance, **kwargs):
+def create_saving_wallet(sender, instance, created, **kwargs):
     """
     A saving wallet will be created automatically for every new user added in the database
     We need to save in wallet_type a 'saving' type before creating user.
     Else, the app will crash
     """
-    try:
-        # wallet type that will be created first is the saving one
-        wallet_type = WalletType.objects.get(wallet_type="saving")
-        print('instance: ', instance)
+    if created:
+        try:
+            # wallet type that will be created first is the saving one
+            wallet_type = WalletType.objects.get(wallet_type="saving")
+            print('instance: ', instance)
 
-        # Verifying if the user is authenticated before saving
-        if instance:
-            wallet_exists = Wallet.objects.filter(user_id=instance, wallet_type_id=wallet_type)
-            new_wallet = Wallet(user_id=instance, wallet_type_id=wallet_type, amount=0)
+            # Verifying if the user is authenticated before saving
+            if instance:
+                wallet_exists = Wallet.objects.filter(user_id=instance, wallet_type_id=wallet_type)
+                new_wallet = Wallet(user_id=instance, wallet_type_id=wallet_type, amount=0)
 
-            if wallet_exists:
-                wallet_exists.update(user_id=instance, wallet_type_id=wallet_type, amount=0)
-            else:
-                new_wallet.save()
-    except:
-        raise ValidationError("Unable to create a saving wallet")
+                if wallet_exists:
+                    wallet_exists.update(user_id=instance, wallet_type_id=wallet_type, amount=0)
+                else:
+                    new_wallet.save()
+        except:
+            raise ValidationError("Unable to create a saving wallet")
