@@ -34,7 +34,6 @@ class Wallet(models.Model):
             raise ValueError("The amount cannot be bellow zero")
 
 
-
 class TransactionType(models.Model):
     transaction_type = models.CharField(max_length=30, unique=True)
 
@@ -65,7 +64,6 @@ class Transaction(models.Model):
             raise ValueError("The amount cannot be bellow zero")
 
 
-<<<<<<< HEAD
 class Notification(models.Model):
     """
     this class will contain all notification that we need,
@@ -80,8 +78,6 @@ class Notification(models.Model):
     received_amount = models.FloatField()
 
 
-=======
 class AddMoneyToWallet(models.Model):
     names = models.CharField(max_length=30)
     amount = models.IntegerField()
->>>>>>> 36f78e86be1f6b387a19ffcf29a4a2ca8e9b2ce4
