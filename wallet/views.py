@@ -116,13 +116,11 @@ class CreateWalletTypeAPIView(generics.GenericAPIView):
 
 
 
-# class AddMoneyToWalletApiView(generics.CreateAPIView):
 class AddMoneyToWalletApiView(APIView):
     serializer_class = AddMoneyToWalletSerializer
     permission_classes = [permissions.IsAuthenticated, IsWalletOwner]
 
     def post(self, request):
-        # amount = 0
         serializer = AddMoneyToWalletSerializer(data=self.request.data)
         if serializer.is_valid():
             amount = serializer.validated_data['amount']
@@ -142,13 +140,6 @@ class AddMoneyToWalletApiView(APIView):
             redirect_link = process_payment(name, amount)
             return redirect(redirect_link)
 
-        # saving_wallet = WalletType.objects.get(wallet_type='saving')
-        # saving_instance = Wallet.objects.filter(user_id=self.request.user).get(wallet_type_id=saving_wallet)
-        # saving_object = Wallet.objects.filter(user_id=self.request.user).filter(wallet_type_id=saving_wallet)
-        # current_amount = saving_instance.amount
-        # new_amount = current_amount + amount
-        # saving_object.update(amount=new_amount)
-
         return Response(serializer.errors)
 
 
@@ -161,8 +152,5 @@ def payment_response(request):
 
     print(status)
     print(tx_ref)
-    print()
-    print(currency)
-
 
     return HttpResponse('Finished')
