@@ -2,8 +2,13 @@ from django.contrib.auth import get_user_model
 from django.db import connection
 from rest_framework import serializers
 
+from wallet.models import Wallet, WalletType, Transaction, TransactionType, AddMoneyToWallet
 from authentication.utils import Util
+<<<<<<< HEAD
 from wallet.models import Wallet, WalletType, Transaction, TransactionType, Notification
+=======
+
+>>>>>>> 36f78e86be1f6b387a19ffcf29a4a2ca8e9b2ce4
 
 User = get_user_model()
 
@@ -68,6 +73,12 @@ class TransactionTypeSerializer(serializers.HyperlinkedModelSerializer):
         fields = ['transaction_type']
 
 
+class AddMoneyToWalletSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = AddMoneyToWallet
+        fields = ['names', 'amount']
+
 class TransactionListSerializer(serializers.HyperlinkedModelSerializer):
     """
     Serializer for Transaction List only
@@ -80,6 +91,7 @@ class TransactionListSerializer(serializers.HyperlinkedModelSerializer):
         model = Transaction
         fields = ['amount', 'date', 'wallet_id', 'to', 'transaction_type_id']
 
+<<<<<<< HEAD
 
 class NotificationListSerializer(serializers.HyperlinkedModelSerializer):
     transaction_from = serializers.CharField(source='transaction_from.email')
@@ -94,3 +106,5 @@ class NotificationUpdateSerializer(serializers.HyperlinkedModelSerializer):
         fields = []
 
 
+=======
+>>>>>>> 36f78e86be1f6b387a19ffcf29a4a2ca8e9b2ce4

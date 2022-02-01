@@ -10,15 +10,15 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['email', 'username', 'first_name', 'last_name', 'password']
+        fields = ['email', 'full_name', 'mobile', 'password']
 
     """ method for validating inputs from user"""
     def validate(self, attrs):
         email = attrs.get('email', )
-        username = attrs.get('username', )
+        full_name = attrs.get('full_name', )
 
-        if not username.isalnum():
-            raise serializers.ValidationError('The username should contain alphanumeric character')
+        if User.objects.filter(email=email).exists():
+            raise serializers.ValidationError('User with this email exist')
 
         return attrs
 
@@ -40,12 +40,12 @@ class EmailVerificationSerializer(serializers.ModelField):
 class LoginSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(max_length=255, min_length=3)
     password = serializers.CharField(max_length=69, min_length=4, write_only=True)
-    username = serializers.CharField(max_length=255, min_length=3, read_only=True)
+    full_name = serializers.CharField(max_length=255, min_length=3, read_only=True)
     tokens = serializers.CharField(max_length=69, min_length=6, read_only=True)
 
     class Meta:
         model = User
-        fields = ['email', 'password', 'username', 'tokens']
+        fields = ['email', 'full_name', 'password', 'tokens']
 
     def validate(self, attrs):
         email = attrs.get('email', )
@@ -62,7 +62,7 @@ class LoginSerializer(serializers.ModelSerializer):
 
         return {
             'email': user.email,
-            'username': user.username,
+            'full_name': user.full_name,
             'tokens': user.tokens,
         }
 

@@ -15,6 +15,14 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
+            name='AddMoneyToWallet',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('names', models.CharField(max_length=30)),
+                ('amount', models.IntegerField()),
+            ],
+        ),
+        migrations.CreateModel(
             name='TransactionType',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),

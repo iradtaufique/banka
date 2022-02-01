@@ -1,75 +1,54 @@
 from django.db import models
 from django.contrib.auth.models import (
-    BaseUserManager, AbstractBaseUser
+    BaseUserManager, AbstractBaseUser, PermissionsMixin
 )
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
 
 
-class UserManager(BaseUserManager):
+class CustomUserManager(BaseUserManager):
+    def create_superuser(self, email, full_name, password=None,  **other_fields):
 
-    def create_superuser(self, email, username, password=None):
-        """
-        Creates and saves a superuser with the given email, date of
-        birth and password.
-        """
-        user = self.create_user(
-            email,
-            password=password,
-            username=username,
-            first_name='first_name',
-            last_name='last_name',
-        )
-        user.is_admin = True
-        user.is_active = True
-        user.save(using=self._db)
-        return user
+        other_fields.setdefault('is_staff', True)
+        other_fields.setdefault('is_superuser', True)
+        other_fields.setdefault('is_active', True)
+        other_fields.setdefault('is_admin', True)
 
-    def create_user(self, email, username, first_name, last_name, password=None):
-        """
-        Creates and saves a User with the given email, date of
-        birth and password.
-        """
+        if other_fields.get('is_staff') is not True:
+            raise ValueError(
+                'Superuser must be assigned to is_staff=True.')
+        if other_fields.get('is_superuser') is not True:
+            raise ValueError(
+                'Superuser must be assigned to is_superuser=True.')
+
+        return self.create_user(email, full_name, password,  **other_fields)
+
+    def create_user(self, email, full_name, password, **other_fields):
+
         if not email:
-            raise ValueError('Users must have an email address')
+            raise ValueError('You must provide an email address')
 
-        if not username:
-            raise ValueError('Users must have a username')
-
-        if not first_name:
-            raise ValueError('Users must have a first_name')
-
-        if not last_name:
-            raise ValueError('Users must have a last_name')
-        user = self.model(
-            email=self.normalize_email(email),
-            username=username,
-            first_name=first_name,
-            last_name=last_name,
-        )
-
+        email = self.normalize_email(email)
+        user = self.model(email=email, full_name=full_name, **other_fields)
         user.set_password(password)
-        user.save(using=self._db)
-
+        user.save()
         return user
 
-class User(AbstractBaseUser):
-    email = models.EmailField(verbose_name="Email", max_length=30, unique=True)
-    username = models.CharField(max_length=30, unique=True)
-    is_admin = models.BooleanField(default=False)
-    is_staff = models.BooleanField(default=False)
-    is_super_user = models.BooleanField(default=False)
-    first_name = models.CharField(max_length=30)
-    last_name = models.CharField(max_length=30)
-    is_active = models.BooleanField(default=False)
-    date_of_birth = models.DateField(null=True)
-    last_login = models.DateField(auto_now=True, verbose_name="Last login")
-    date_joined = models.DateField(auto_now_add=True, verbose_name="Date joined")
 
-    objects = UserManager()
+class User(AbstractBaseUser, PermissionsMixin):
+    email = models.EmailField(verbose_name='Email Address', unique=True)
+    full_name = models.CharField(max_length=50)
+    mobile = models.CharField(max_length=12, blank=True)
+    is_active = models.BooleanField(default=False)
+    is_staff = models.BooleanField(default=False)
+    is_admin = models.BooleanField(default=False)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    objects = CustomUserManager()
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username']
+    REQUIRED_FIELDS = ['full_name']
 
     def __str__(self):
         return self.email
@@ -84,11 +63,6 @@ class User(AbstractBaseUser):
         Yes, always"""
         return True
 
-    @property
-    def is_staff(self):
-        """Is the user a member of staff?
-         All admins are staff"""
-        return self.is_admin
 
     def tokens(self):
         refresh = RefreshToken.for_user(self)
@@ -96,4 +70,3 @@ class User(AbstractBaseUser):
             'refresh-token': str(refresh),
             'access-token': str(refresh.access_token)
         }
-
