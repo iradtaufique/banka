@@ -8,7 +8,7 @@ def process_payment(name, amount):
         "tx_ref": '' + str(math.floor(1000000 + random.random() * 9000000)),
         "amount": str(amount),
         "currency": "RWF",
-        "redirect_url": "http://localhost:8000/wallet/callback",
+        # "redirect_url": "http://localhost:8000/wallet/callback",
         "payment_options": "card",
         "meta": {
             "consumer_id": 23,
