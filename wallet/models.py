@@ -74,7 +74,7 @@ class Notification(models.Model):
     content = models.TextField()
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     updated = models.DateTimeField(auto_now=True)
-    sent = models.BooleanField(null=True, blank=True)
+    sent = models.BooleanField(default=False)
     transaction_from = models.ForeignKey(User, on_delete=models.CASCADE, related_name="transaction_from")
     received_amount = models.FloatField()
 
