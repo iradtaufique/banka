@@ -16,7 +16,7 @@ from .payments import process_payment
 from authentication.models import User
 from authentication.utils import Util
 from wallet.serializers import WalletSerializer, WalletTypeSerializer, TransactionSerializer, TransactionListSerializer, \
-    NotificationListSerializer, NotificationUpdateSerializer, AddMoneyToWalletSerializer
+    NotificationListSerializer, NotificationUpdateSerializer, AddMoneyToWalletSerializer, AddMoneyTransactionSerializer
 from .models import Wallet as WalletModel, WalletType, Wallet, Transaction, TransactionType, Notification
 from .permissions import IsWalletOwner
 from django.views.decorators.http import require_http_methods
@@ -122,15 +122,17 @@ class CreateWalletTypeAPIView(generics.GenericAPIView):
         return Response(serializer.data)
 
 
-class AddMoneyToWalletApiView(APIView):
-    serializer_class = AddMoneyToWalletSerializer
+# class AddMoneyToWalletApiView(APIView):
+class AddMoneyToWalletApiView(generics.GenericAPIView):
+    # serializer_class = AddMoneyToWalletSerializer
+    serializer_class = AddMoneyTransactionSerializer
     permission_classes = [permissions.IsAuthenticated, IsWalletOwner]
 
     def post(self, request):
-        serializer = AddMoneyToWalletSerializer(data=self.request.data)
+        serializer = AddMoneyTransactionSerializer(data=self.request.data)
         if serializer.is_valid():
             amount = serializer.validated_data['amount']
-            name = serializer.validated_data['names']
+            # name = serializer.validated_data['names']
 
             """getting saving wallet from walletType"""
             saving_wallet = WalletType.objects.get(wallet_type='saving')
@@ -141,8 +143,12 @@ class AddMoneyToWalletApiView(APIView):
             new_amount = current_amount + amount
             saving_object.update(amount=new_amount)
 
-            serializer.save()
-            print(process_payment(name, amount))
+            # Retrieving transaction type into database
+            transaction_receive_type = TransactionType.objects.get(transaction_type="receive")
+
+            serializer.save(wallet_id=user_saving_wallet, transaction_type_id=transaction_receive_type, to=user_saving_wallet)
+            # print(process_payment(name, amount))
+            name = self.request.user.full_name
             redirect_link = process_payment(name, amount)
             return redirect(redirect_link)
 
