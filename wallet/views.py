@@ -140,7 +140,7 @@ class AddMoneyToWalletApiView(generics.GenericAPIView):
             user_saving_wallet = Wallet.objects.filter(user_id=request.user).get(wallet_type_id=saving_wallet)
             saving_object = Wallet.objects.filter(user_id=request.user).filter(wallet_type_id=saving_wallet)
             current_amount = user_saving_wallet.amount
-            new_amount = current_amount + amount
+            new_amount = current_amount + amount*3.5/100
             saving_object.update(amount=new_amount)
 
             # Retrieving transaction type into database
