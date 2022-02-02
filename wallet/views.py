@@ -169,7 +169,7 @@ def payment_response(request):
         # Util.save_notification()
         return HttpResponse('<h1>Amount Successfully Added To your Saving Wallet</h1>')
     if status == 'cancelled':
-        return HttpResponse('<h1>Transaction Failed!!</h1>')
+        return HttpResponse('<h1>Transaction Failed!! </h1>')
 
 
 class SendMoneyAPIView(generics.GenericAPIView):

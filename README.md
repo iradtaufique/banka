@@ -1,6 +1,8 @@
 # Banka
 ### A simple banking app for non-financial people. (Django)
 
+### This Project is for Learning Purpose Only!!
+
 #### How to run this application
 1. clone project by `git clone https://github.com/iradtaufique/banka.git`
 2. create your `.env file` and configure `SECRET_KEY`, `EMAIL_HOST_USER` and `EMAIL_HOST_PASSWORD`
