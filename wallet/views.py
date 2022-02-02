@@ -104,7 +104,7 @@ class CreateWalletTypeAPIView(generics.GenericAPIView):
     In case a user want to create another wallet type
     Different from existent wallet type
     """
-    permission_classes = [permissions.IsAuthenticated]
+    # permission_classes = [permissions.IsAuthenticated]
     serializer_class = WalletTypeSerializer
     queryset = WalletType.objects.all()
 
