@@ -8,7 +8,7 @@
 4. run `python manage.py makemigrations` then `python manage.py migrate`
 5. run `python manage.py loaddata fixture.json`
 6. now run `python manage.py runserver`
->Project Api can be found here https://banka-solvit.herokuapp.com.
+>Project Api can be found here https://new-banker.herokuapp.com/
 
 ![](banka.png)
 
