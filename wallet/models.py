@@ -79,5 +79,5 @@ class Notification(models.Model):
 
 
 class AddMoneyToWallet(models.Model):
-    names = models.CharField(max_length=30)
+    description = models.TextField()
     amount = models.IntegerField()
