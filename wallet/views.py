@@ -130,7 +130,6 @@ class CreateWalletTypeAPIView(generics.GenericAPIView):
         return Response(serializer.data)
 
 
-# class AddMoneyToWalletApiView(APIView):
 class AddMoneyToWalletApiView(generics.GenericAPIView):
     serializer_class = AddMoneyTransactionSerializer
     permission_classes = [permissions.IsAuthenticated, IsWalletOwner]

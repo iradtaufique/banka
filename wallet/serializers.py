@@ -2,7 +2,6 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from authentication.utils import Util
-from wallet.models import AddMoneyToWallet
 from wallet.models import Wallet, WalletType, Transaction, TransactionType, Notification
 
 User = get_user_model()
