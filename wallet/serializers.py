@@ -45,7 +45,6 @@ class TransactionSerializer(serializers.HyperlinkedModelSerializer):
             saving_wallet = WalletType.objects.get(wallet_type="saving")
             to = serializers.PrimaryKeyRelatedField(queryset=Wallet.objects.filter(wallet_type_id=saving_wallet))
 
-
     class Meta:
         model = Transaction
         # We will just allow sending money so no need to add transaction type into fields
@@ -69,10 +68,10 @@ class TransactionTypeSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class AddMoneyToWalletSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = AddMoneyToWallet
         fields = ['amount', 'description']
+
 
 class TransactionListSerializer(serializers.HyperlinkedModelSerializer):
     """
@@ -87,9 +86,9 @@ class TransactionListSerializer(serializers.HyperlinkedModelSerializer):
         fields = ['amount', 'date', 'wallet_id', 'to', 'transaction_type_id']
 
 
-
 class NotificationListSerializer(serializers.HyperlinkedModelSerializer):
     transaction_from = serializers.CharField(source='transaction_from.email')
+
     class Meta:
         model = Notification
         fields = ['created', 'content', 'transaction_from', 'received_amount', 'pk']
@@ -101,4 +100,24 @@ class NotificationUpdateSerializer(serializers.HyperlinkedModelSerializer):
         fields = []
 
 
+class AddMoneyTransactionSerializer(serializers.HyperlinkedModelSerializer):
+    """
+    Serializer for Transaction
+    """
+    # Before accessing WalletType model here, we need to check if its table exists to avoid having exceptions
+    table_name = "wallet_wallettype"
+    if Util.db_table_exists(table_name):
+        if WalletType.objects.filter(wallet_type="saving").exists():
+            saving_wallet = WalletType.objects.get(wallet_type="saving")
+            # to = serializers.PrimaryKeyRelatedField(queryset=Wallet.objects.filter(wallet_type_id=saving_wallet))
 
+    class Meta:
+        model = Transaction
+        # We will just allow sending money so no need to add transaction type into fields
+        # But, we will save transaction according to user in views
+        fields = ['amount', 'description']
+
+    def validate(self, data):
+        if float(data['amount']) < 0:
+            raise serializers.ValidationError('The amount cannot be negative')
+        return data

@@ -7,12 +7,11 @@ from rest_framework import generics, permissions
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
-import tempfile
 
 from authentication.models import User
 from authentication.utils import Util
 from wallet.serializers import WalletSerializer, WalletTypeSerializer, TransactionSerializer, TransactionListSerializer, \
-    NotificationListSerializer, NotificationUpdateSerializer, AddMoneyToWalletSerializer
+    NotificationListSerializer, NotificationUpdateSerializer, AddMoneyToWalletSerializer, AddMoneyTransactionSerializer
 from .models import Wallet as WalletModel, WalletType, Wallet, Transaction, TransactionType, Notification
 from .payments import process_payment
 from .permissions import IsWalletOwner
@@ -30,7 +29,6 @@ class TransactionsData:
     def add_data(cls, data):
         with cls.add_data_lock:
             cls.data.append(data)
-
 
 
 class CreateWalletAPIView(generics.GenericAPIView):
@@ -114,7 +112,7 @@ class CreateWalletTypeAPIView(generics.GenericAPIView):
     In case a user want to create another wallet type
     Different from existent wallet type
     """
-    permission_classes = [permissions.IsAuthenticated]
+    # permission_classes = [permissions.IsAuthenticated]
     serializer_class = WalletTypeSerializer
     queryset = WalletType.objects.all()
 
@@ -132,14 +130,17 @@ class CreateWalletTypeAPIView(generics.GenericAPIView):
         return Response(serializer.data)
 
 
-class AddMoneyToWalletApiView(APIView):
-    serializer_class = AddMoneyToWalletSerializer
+# class AddMoneyToWalletApiView(APIView):
+class AddMoneyToWalletApiView(generics.GenericAPIView):
+    # serializer_class = AddMoneyToWalletSerializer
+    serializer_class = AddMoneyTransactionSerializer
     permission_classes = [permissions.IsAuthenticated, IsWalletOwner]
 
     def post(self, request):
-        serializer = AddMoneyToWalletSerializer(data=self.request.data)
+        serializer = AddMoneyTransactionSerializer(data=self.request.data)
         if serializer.is_valid():
             amount = serializer.validated_data['amount']
+
             description = serializer.validated_data['description']
 
             # Verifying if there is no pending transaction before processing another one
@@ -152,11 +153,13 @@ class AddMoneyToWalletApiView(APIView):
             if len(user_pending_transactions) > 1:
                 raise ValidationError("You have a pending transaction, please finish it before processing another")
 
-            transaction_data = {'amount': amount, 'user': self.request.user, 'status': 'pending', 'description': description}
+            transaction_data = {'amount': amount, 'user': self.request.user, 'status': 'pending',
+                                'description': description}
             TransactionsData.add_data(transaction_data)
 
             print(process_payment(self.request.user.full_name, amount))
             redirect_link = process_payment(self.request.user.full_name, amount)
+
             return redirect(redirect_link)
 
         return Response(serializer.errors)
@@ -195,12 +198,16 @@ def payment_response(request):
                             description=dic.get('description'),
                             amount=amount,
                             transaction_type_id=receive_transaction_type).save()
-                Util.save_notification(user=request.user, amount=amount, content=notification_message, transaction_from=request.user)
+                Util.save_notification(user=request.user, amount=amount, content=notification_message,
+                                       transaction_from=request.user)
                 break
+        return HttpResponse('Transaction succeed')
+
+    elif status == 'cancelled':
+        return HttpResponse('<h1>Transaction Failed!! </h1>')
+
     else:
         return HttpResponse("Transaction failed")
-
-    return HttpResponse('Finished')
 
 
 class SendMoneyAPIView(generics.GenericAPIView):
