@@ -1,26 +1,34 @@
-from django.shortcuts import render, redirect
-
-from django.contrib.auth import get_user_model
-from django.db.models.signals import post_save, pre_save
+from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.http import HttpResponse
+from django.shortcuts import redirect
+from django.views.decorators.http import require_http_methods
 from rest_framework import generics, permissions
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
-import requests
-from django.db.models.signals import post_save, pre_save
-
-from .payments import process_payment
 
 from authentication.models import User
 from authentication.utils import Util
 from wallet.serializers import WalletSerializer, WalletTypeSerializer, TransactionSerializer, TransactionListSerializer, \
     NotificationListSerializer, NotificationUpdateSerializer, AddMoneyToWalletSerializer, AddMoneyTransactionSerializer
 from .models import Wallet as WalletModel, WalletType, Wallet, Transaction, TransactionType, Notification
+from .payments import process_payment
 from .permissions import IsWalletOwner
-from django.views.decorators.http import require_http_methods
-from django.http import HttpResponse
+import threading
+
+
+class TransactionsData:
+    """
+    add transaction data to an array to allow other method to access it
+    """
+    data = []
+    add_data_lock = threading.Lock()
+
+    @classmethod
+    def add_data(cls, data):
+        with cls.add_data_lock:
+            cls.data.append(data)
 
 
 class CreateWalletAPIView(generics.GenericAPIView):
@@ -132,24 +140,26 @@ class AddMoneyToWalletApiView(generics.GenericAPIView):
         serializer = AddMoneyTransactionSerializer(data=self.request.data)
         if serializer.is_valid():
             amount = serializer.validated_data['amount']
-            # name = serializer.validated_data['names']
 
-            """getting saving wallet from walletType"""
-            saving_wallet = WalletType.objects.get(wallet_type='saving')
-            """get user saving wallet"""
-            user_saving_wallet = Wallet.objects.filter(user_id=request.user).get(wallet_type_id=saving_wallet)
-            saving_object = Wallet.objects.filter(user_id=request.user).filter(wallet_type_id=saving_wallet)
-            current_amount = user_saving_wallet.amount
-            new_amount = current_amount + amount*3.5/100
-            saving_object.update(amount=new_amount)
+            description = serializer.validated_data['description']
 
-            # Retrieving transaction type into database
-            transaction_receive_type = TransactionType.objects.get(transaction_type="receive")
+            # Verifying if there is no pending transaction before processing another one
+            transaction_data_array = TransactionsData.data
+            user_pending_transactions = []
 
-            serializer.save(wallet_id=user_saving_wallet, transaction_type_id=transaction_receive_type, to=user_saving_wallet)
-            # print(process_payment(name, amount))
-            name = self.request.user.full_name
-            redirect_link = process_payment(name, amount)
+            for dic in transaction_data_array:
+                if dic.get('user') == self.request.user and dic.get('status') == 'pending':
+                    user_pending_transactions.append(dic)
+            if len(user_pending_transactions) > 1:
+                raise ValidationError("You have a pending transaction, please finish it before processing another")
+
+            transaction_data = {'amount': amount, 'user': self.request.user, 'status': 'pending',
+                                'description': description}
+            TransactionsData.add_data(transaction_data)
+
+            print(process_payment(self.request.user.full_name, amount))
+            redirect_link = process_payment(self.request.user.full_name, amount)
+
             return redirect(redirect_link)
 
         return Response(serializer.errors)
@@ -157,19 +167,47 @@ class AddMoneyToWalletApiView(generics.GenericAPIView):
 
 @require_http_methods(['GET', 'POST'])
 def payment_response(request):
-    status=request.GET.get('status', None)
-    tx_ref=request.GET.get('tx_ref', None)
-    amount=request.GET.get('amount', None)
-    currency=request.GET.get('currency', None)
+    status = request.GET.get('status', None)
+    tx_ref = request.GET.get('tx_ref', None)
 
     print(status)
     print(tx_ref)
+    if status == "successful":
+        transaction_data_array = TransactionsData.data
+        for dic in transaction_data_array:
+            if dic.get('user') == request.user and dic.get('status') == 'pending':
+                # getting saving wallet from walletType
+                saving_wallet = WalletType.objects.get(wallet_type='saving')
 
-    if status == 'successful':
-        # Util.save_notification()
-        return HttpResponse('<h1>Amount Successfully Added To your Saving Wallet</h1>')
-    if status == 'cancelled':
+                # getting user saving wallet
+                user_saving_wallet = Wallet.objects.filter(user_id=request.user).get(wallet_type_id=saving_wallet)
+                saving_object = Wallet.objects.filter(user_id=request.user).filter(wallet_type_id=saving_wallet)
+
+                # getting the amount to add on
+                amount = dic.get('amount')
+                current_amount = user_saving_wallet.amount
+                new_amount = current_amount + amount
+                saving_object.update(amount=new_amount)
+                dic['status'] = 'completed'
+                notification_message = "You received money from an external source"
+                receive_transaction_type = TransactionType.objects.get(transaction_type="receive")
+
+                # saving the new transaction and a notification in database
+                Transaction(to=user_saving_wallet,
+                            wallet_id=user_saving_wallet,
+                            description=dic.get('description'),
+                            amount=amount,
+                            transaction_type_id=receive_transaction_type).save()
+                Util.save_notification(user=request.user, amount=amount, content=notification_message,
+                                       transaction_from=request.user)
+                break
+        return HttpResponse('Transaction succeed')
+
+    elif status == 'cancelled':
         return HttpResponse('<h1>Transaction Failed!! </h1>')
+
+    else:
+        return HttpResponse("Transaction failed")
 
 
 class SendMoneyAPIView(generics.GenericAPIView):
@@ -260,7 +298,6 @@ def create_saving_wallet(sender, instance, created, **kwargs):
         try:
             # wallet type that will be created first is the saving one
             wallet_type = WalletType.objects.get(wallet_type="saving")
-            print('instance: ', instance)
 
             # Verifying if the user is authenticated before saving
             if instance:
