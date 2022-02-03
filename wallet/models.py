@@ -76,8 +76,3 @@ class Notification(models.Model):
     sent = models.BooleanField(default=False)
     transaction_from = models.ForeignKey(User, on_delete=models.CASCADE, related_name="transaction_from")
     received_amount = models.FloatField()
-
-
-class AddMoneyToWallet(models.Model):
-    description = models.TextField()
-    amount = models.IntegerField()
