@@ -67,12 +67,6 @@ class TransactionTypeSerializer(serializers.HyperlinkedModelSerializer):
         fields = ['transaction_type']
 
 
-class AddMoneyToWalletSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = AddMoneyToWallet
-        fields = ['amount', 'description']
-
-
 class TransactionListSerializer(serializers.HyperlinkedModelSerializer):
     """
     Serializer for Transaction List only

@@ -11,7 +11,7 @@ from rest_framework.views import APIView
 from authentication.models import User
 from authentication.utils import Util
 from wallet.serializers import WalletSerializer, WalletTypeSerializer, TransactionSerializer, TransactionListSerializer, \
-    NotificationListSerializer, NotificationUpdateSerializer, AddMoneyToWalletSerializer, AddMoneyTransactionSerializer
+    NotificationListSerializer, NotificationUpdateSerializer, AddMoneyTransactionSerializer
 from .models import Wallet as WalletModel, WalletType, Wallet, Transaction, TransactionType, Notification
 from .payments import process_payment
 from .permissions import IsWalletOwner
@@ -132,7 +132,6 @@ class CreateWalletTypeAPIView(generics.GenericAPIView):
 
 # class AddMoneyToWalletApiView(APIView):
 class AddMoneyToWalletApiView(generics.GenericAPIView):
-    # serializer_class = AddMoneyToWalletSerializer
     serializer_class = AddMoneyTransactionSerializer
     permission_classes = [permissions.IsAuthenticated, IsWalletOwner]
 
