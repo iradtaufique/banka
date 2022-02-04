@@ -34,7 +34,6 @@ class Wallet(models.Model):
             raise ValueError("The amount cannot be bellow zero")
 
 
-
 class TransactionType(models.Model):
     transaction_type = models.CharField(max_length=30, unique=True)
 
@@ -77,9 +76,3 @@ class Notification(models.Model):
     sent = models.BooleanField(default=False)
     transaction_from = models.ForeignKey(User, on_delete=models.CASCADE, related_name="transaction_from")
     received_amount = models.FloatField()
-
-
-class AddMoneyToWallet(models.Model):
-    names = models.CharField(max_length=30)
-    amount = models.IntegerField()
-

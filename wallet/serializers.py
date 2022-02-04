@@ -1,13 +1,11 @@
 from django.contrib.auth import get_user_model
-from django.db import connection
 from rest_framework import serializers
 
-from wallet.models import Wallet, WalletType, Transaction, TransactionType, AddMoneyToWallet
 from authentication.utils import Util
 from wallet.models import Wallet, WalletType, Transaction, TransactionType, Notification
 
-
 User = get_user_model()
+
 
 class WalletSerializer(serializers.HyperlinkedModelSerializer):
     """
@@ -46,7 +44,6 @@ class TransactionSerializer(serializers.HyperlinkedModelSerializer):
             saving_wallet = WalletType.objects.get(wallet_type="saving")
             to = serializers.PrimaryKeyRelatedField(queryset=Wallet.objects.filter(wallet_type_id=saving_wallet))
 
-
     class Meta:
         model = Transaction
         # We will just allow sending money so no need to add transaction type into fields
@@ -69,12 +66,6 @@ class TransactionTypeSerializer(serializers.HyperlinkedModelSerializer):
         fields = ['transaction_type']
 
 
-class AddMoneyToWalletSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = AddMoneyToWallet
-        fields = ['names', 'amount']
-
 class TransactionListSerializer(serializers.HyperlinkedModelSerializer):
     """
     Serializer for Transaction List only
@@ -90,6 +81,7 @@ class TransactionListSerializer(serializers.HyperlinkedModelSerializer):
 
 class NotificationListSerializer(serializers.HyperlinkedModelSerializer):
     transaction_from = serializers.CharField(source='transaction_from.email')
+
     class Meta:
         model = Notification
         fields = ['created', 'content', 'transaction_from', 'received_amount', 'pk']
@@ -111,7 +103,6 @@ class AddMoneyTransactionSerializer(serializers.HyperlinkedModelSerializer):
         if WalletType.objects.filter(wallet_type="saving").exists():
             saving_wallet = WalletType.objects.get(wallet_type="saving")
             # to = serializers.PrimaryKeyRelatedField(queryset=Wallet.objects.filter(wallet_type_id=saving_wallet))
-
 
     class Meta:
         model = Transaction
