@@ -13,7 +13,7 @@ from authentication.utils import Util
 from wallet.serializers import WalletSerializer, WalletTypeSerializer, TransactionSerializer, TransactionListSerializer, \
     NotificationListSerializer, NotificationUpdateSerializer, AddMoneyTransactionSerializer
 from .models import Wallet as WalletModel, WalletType, Wallet, Transaction, TransactionType, Notification
-from .payments import process_payment
+from .payments import process_payment, process_transfer
 from .permissions import IsWalletOwner
 import threading
 
@@ -133,6 +133,7 @@ class CreateWalletTypeAPIView(generics.GenericAPIView):
 class AddMoneyToWalletApiView(generics.GenericAPIView):
     serializer_class = AddMoneyTransactionSerializer
     permission_classes = [permissions.IsAuthenticated, IsWalletOwner]
+    queryset = Transaction.objects.all()
 
     def post(self, request):
         serializer = AddMoneyTransactionSerializer(data=self.request.data)
@@ -145,11 +146,15 @@ class AddMoneyToWalletApiView(generics.GenericAPIView):
             transaction_data_array = TransactionsData.data
             user_pending_transactions = []
 
+            print(transaction_data_array)
             for dic in transaction_data_array:
                 if dic.get('user') == self.request.user and dic.get('status') == 'pending':
                     user_pending_transactions.append(dic)
-            if len(user_pending_transactions) > 1:
+            if len(user_pending_transactions) >= 1:
+                print(transaction_data_array)
                 raise ValidationError("You have a pending transaction, please finish it before processing another")
+
+
 
             transaction_data = {'amount': amount, 'user': self.request.user, 'status': 'pending',
                                 'description': description}
@@ -172,6 +177,7 @@ def payment_response(request):
     print(tx_ref)
     if status == "successful":
         transaction_data_array = TransactionsData.data
+        print('data: ', transaction_data_array)
         for dic in transaction_data_array:
             if dic.get('user') == request.user and dic.get('status') == 'pending':
                 # getting saving wallet from walletType
@@ -198,6 +204,7 @@ def payment_response(request):
                             transaction_type_id=receive_transaction_type).save()
                 Util.save_notification(user=request.user, amount=amount, content=notification_message,
                                        transaction_from=request.user)
+                print(dic)
                 break
         return HttpResponse('Transaction succeed')
 
@@ -343,3 +350,12 @@ class UpdateNotificationAPIView(generics.RetrieveUpdateAPIView):
             return serializer.save(sent=True)
         except ValueError:
             raise ValidationError("error: " + ValueError.__str__())
+
+
+def transfer_view(request):
+    amount = 1000
+    response = process_transfer(amount)
+    if response['data']:
+        return HttpResponse('Transaction succeed')
+    return HttpResponse('Transaction failed')
+
