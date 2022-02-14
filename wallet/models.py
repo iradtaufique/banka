@@ -1,6 +1,9 @@
+from datetime import datetime
+
 from django.db import models
 from django.contrib.auth import get_user_model
 from authentication.models import User
+
 
 User = get_user_model()
 
@@ -16,18 +19,42 @@ class WalletType(models.Model):
             raise ValueError("wallet type should be a alpha type")
 
 
+WALLET_TYPE = (
+    ('SAVING', 'SAVING'),
+    ('HAUSEHOLD', 'HAUSEHOLD'),
+    ('SCHOOL', 'SCHOOL'),
+)
+
+
+def generate_wallet_id_number():
+    all_saving_wallet = Wallet.objects.filter(wallet_type_id='SAVING').all().count()
+    all_hausehold_wallet = Wallet.objects.filter(wallet_type_id='HAUSEHOLD').all().count()
+    all_school_wallet = Wallet.objects.filter(wallet_type_id='SCHOOL').all().count()
+    year = datetime.now().year
+
+    code = 1
+    if not all_saving_wallet:
+        return 'SV-' + str(year) + '-' + str(code)
+
+    elif all_saving_wallet:
+        code = code + all_saving_wallet
+        return 'SV-' + str(year) + '-' + str(code)
+
+
 class Wallet(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
     amount = models.FloatField(default=0)
-    wallet_type_id = models.ForeignKey(WalletType, on_delete=models.CASCADE)
+    # wallet_type_id = models.ForeignKey(WalletType, on_delete=models.CASCADE)
+    wallet_type_id = models.CharField(max_length=30, choices=WALLET_TYPE)
+    wallet_number = models.CharField(max_length=30, default=generate_wallet_id_number)
 
-    class Meta:
-        unique_together = ['user_id', 'wallet_type_id']
+    # class Meta:
+    #     unique_together = ['user_id', 'wallet_type_id']
 
     def __str__(self):
-        user = User.objects.get(email=self.user_id)
-        wallet_type = WalletType.objects.get(pk=self.wallet_type_id.pk)
-        return user.__str__()
+        # user = User.objects.get(email=self.user_id)
+        # wallet_type = WalletType.objects.get(pk=self.wallet_type_id.pk)
+        return str(self.user_id)
 
     def validate_unique(self, exclude=None):
         if self.amount < 0:

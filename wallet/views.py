@@ -1,3 +1,5 @@
+import threading
+
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.http import HttpResponse
@@ -6,7 +8,6 @@ from django.views.decorators.http import require_http_methods
 from rest_framework import generics, permissions
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from authentication.models import User
 from authentication.utils import Util
@@ -15,7 +16,6 @@ from wallet.serializers import WalletSerializer, WalletTypeSerializer, Transacti
 from .models import Wallet as WalletModel, WalletType, Wallet, Transaction, TransactionType, Notification
 from .payments import process_payment
 from .permissions import IsWalletOwner
-import threading
 
 
 class TransactionsData:
@@ -133,6 +133,7 @@ class CreateWalletTypeAPIView(generics.GenericAPIView):
 class AddMoneyToWalletApiView(generics.GenericAPIView):
     serializer_class = AddMoneyTransactionSerializer
     permission_classes = [permissions.IsAuthenticated, IsWalletOwner]
+    queryset = TransactionType.objects.all()
 
     def post(self, request):
         serializer = AddMoneyTransactionSerializer(data=self.request.data)
@@ -343,3 +344,24 @@ class UpdateNotificationAPIView(generics.RetrieveUpdateAPIView):
             return serializer.save(sent=True)
         except ValueError:
             raise ValidationError("error: " + ValueError.__str__())
+
+
+
+class AddMoneyToSchoolWallet(generics.GenericAPIView):
+    serializer_class = AddMoneyTransactionSerializer
+    # permission_classes = [permissions.IsAuthenticated, IsWalletOwner]
+    queryset = TransactionType.objects.all()
+
+    def post(self, request):
+        serializer = AddMoneyTransactionSerializer(data=self.request.data)
+        if serializer.is_valid():
+            amount = serializer.validated_data['amount']
+            current_amount = Wallet.objects.get(user_id=self.request.user, wallet_type_id='SAVING').amount
+            current_school_amount = Wallet.objects.filter(user_id=self.request.user, wallet_type_id='SCHOOL')
+
+
+
+            description = serializer.validated_data['description']
+
+        return Response(serializer.errors)
+
