@@ -48,17 +48,11 @@ class Wallet(models.Model):
     wallet_type_id = models.CharField(max_length=30, choices=WALLET_TYPE)
     wallet_number = models.CharField(max_length=30, default=generate_wallet_id_number)
 
-    # class Meta:
-    #     unique_together = ['user_id', 'wallet_type_id']
 
     def __str__(self):
-        # user = User.objects.get(email=self.user_id)
-        # wallet_type = WalletType.objects.get(pk=self.wallet_type_id.pk)
-        return str(self.user_id)
+        return f'{self.user_id} {self.wallet_type_id}'
 
-    def validate_unique(self, exclude=None):
-        if self.amount < 0:
-            raise ValueError("The amount cannot be bellow zero")
+
 
 
 class TransactionType(models.Model):

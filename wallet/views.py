@@ -1,4 +1,5 @@
 import threading
+from datetime import datetime
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -286,29 +287,7 @@ class ListTransactionAPIView(generics.ListAPIView):
         return Response(serializer.data)
 
 
-@receiver(post_save, sender=User)
-def create_saving_wallet(sender, instance, created, **kwargs):
-    """
-    A saving wallet will be created automatically for every new user added in the database
-    We need to save in wallet_type a 'saving' type before creating user.
-    Else, the app will crash
-    """
-    if created:
-        try:
-            # wallet type that will be created first is the saving one
-            wallet_type = WalletType.objects.get(wallet_type="saving")
-
-            # Verifying if the user is authenticated before saving
-            if instance:
-                wallet_exists = Wallet.objects.filter(user_id=instance, wallet_type_id=wallet_type)
-                new_wallet = Wallet(user_id=instance, wallet_type_id=wallet_type, amount=0)
-
-                if wallet_exists:
-                    wallet_exists.update(user_id=instance, wallet_type_id=wallet_type, amount=0)
-                else:
-                    new_wallet.save()
-        except:
-            raise ValidationError("Unable to create a saving wallet")
+ValidationError
 
 
 class ListUserNotificationAPIView(generics.ListAPIView):
@@ -346,22 +325,46 @@ class UpdateNotificationAPIView(generics.RetrieveUpdateAPIView):
             raise ValidationError("error: " + ValueError.__str__())
 
 
-
 class AddMoneyToSchoolWallet(generics.GenericAPIView):
     serializer_class = AddMoneyTransactionSerializer
-    # permission_classes = [permissions.IsAuthenticated, IsWalletOwner]
+    permission_classes = [permissions.IsAuthenticated, IsWalletOwner]
     queryset = TransactionType.objects.all()
 
     def post(self, request):
         serializer = AddMoneyTransactionSerializer(data=self.request.data)
         if serializer.is_valid():
             amount = serializer.validated_data['amount']
-            current_amount = Wallet.objects.get(user_id=self.request.user, wallet_type_id='SAVING').amount
-            current_school_amount = Wallet.objects.filter(user_id=self.request.user, wallet_type_id='SCHOOL')
+            current_saving_amount = Wallet.objects.get(user_id=self.request.user, wallet_type_id='SAVING').amount
+            current_school_amount = Wallet.objects.get(user_id=self.request.user, wallet_type_id='SCHOOL').amount
+            current_saving_object_amount = Wallet.objects.filter(user_id=self.request.user, wallet_type_id='SAVING')
+            current_school_object_amount = Wallet.objects.filter(user_id=self.request.user, wallet_type_id='SCHOOL')
+
+            if amount <= current_saving_amount:
+                new_saving_amount = current_saving_amount - amount
+                new_school_amount = current_school_amount + amount
+                current_school_object_amount.update(amount=new_school_amount)
+                current_saving_object_amount.update(amount=new_saving_amount)
+
+        return Response(serializer.data)
 
 
+class AddMoneyToHouseHoldWalletAPIView(generics.GenericAPIView):
+    serializer_class = AddMoneyTransactionSerializer
+    permission_classes = [permissions.IsAuthenticated, IsWalletOwner]
+    queryset = TransactionType.objects.all()
 
-            description = serializer.validated_data['description']
+    def post(self, request):
+        serializer = AddMoneyTransactionSerializer(data=self.request.data)
+        if serializer.is_valid():
+            amount = serializer.validated_data['amount']
+            current_saving_amount = Wallet.objects.get(user_id=self.request.user, wallet_type_id='SAVING').amount
+            current_hausehold_amount = Wallet.objects.get(user_id=self.request.user, wallet_type_id='HAUSEHOLD').amount
+            current_saving_object_amount = Wallet.objects.filter(user_id=self.request.user, wallet_type_id='SAVING')
+            current_hausehold_object_amount = Wallet.objects.filter(user_id=self.request.user, wallet_type_id='HAUSEHOLD')
+            if amount <= current_saving_amount:
+                new_saving_amount = current_saving_amount - amount
+                new_hausehold_amount = current_hausehold_amount + amount
+                current_hausehold_object_amount.update(amount=new_hausehold_amount)
+                current_saving_object_amount.update(amount=new_saving_amount)
 
-        return Response(serializer.errors)
-
+        return Response(serializer.data)

@@ -13,5 +13,7 @@ urlpatterns = [
     path('callback', views.payment_response, name="payment_response"),
 
     # adding money to wallet
-    path('add-money/', views.AddMoneyToWalletApiView.as_view(), name='add_money')
+    path('add-money/', views.AddMoneyToWalletApiView.as_view(), name='add_money'),
+    path('add-money-school/', views.AddMoneyToSchoolWallet.as_view(), name='add_money_to_school'),
+    path('add-money-hausehold/', views.AddMoneyToHouseHoldWalletAPIView.as_view(), name='add_money_to_hausehold'),
 ]
