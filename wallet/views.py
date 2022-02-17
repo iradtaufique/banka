@@ -16,7 +16,7 @@ from authentication.models import User
 from authentication.utils import Util
 from wallet.serializers import WalletSerializer, WalletTypeSerializer, TransactionSerializer, TransactionListSerializer, \
     NotificationListSerializer, NotificationUpdateSerializer, AddMoneyTransactionSerializer, \
-    ListWalletInformationSerializer
+    ListWalletInformationSerializer, ListTransactionsInformationSerializer
 from .models import Wallet as WalletModel, WalletType, Wallet, Transaction, TransactionType, Notification
 from .payments import process_payment, process_transfer
 from .permissions import IsWalletOwner
@@ -363,7 +363,7 @@ class AddMoneyToSchoolWallet(generics.GenericAPIView):
                 current_school_object_amount.update(amount=new_school_amount)
                 current_saving_object_amount.update(amount=new_saving_amount)
             else:
-                return Response('Insufficient Amount!! Make sure you Have enought Amount on Your Saving Account')
+                return Response('Insufficient Amount!! Make sure you Have enaught Amount on Your Saving Account')
 
         return Response(serializer.data)
 
@@ -437,6 +437,15 @@ class HouseHoldWalletInformation(generics.ListAPIView):
 
     def get_queryset(self):
         return Wallet.objects.filter(user_id=self.request.user, wallet_type_id='HAUSEHOLD')
+
+
+class ListUserTransactionInformation(generics.ListAPIView):
+    """API View for displaying all users transactions"""
+    serializer_class = ListTransactionsInformationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Transaction.objects.filter(wallet_id__user_id=self.request.user)
 
 
 

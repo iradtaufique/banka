@@ -22,4 +22,5 @@ urlpatterns = [
     path('saving-wallet-info/', views.SavingWalletInformation.as_view(), name='saving_wallet_info'),
     path('school-wallet-info/', views.SchoolWalletInformation.as_view(), name='school_wallet_info'),
     path('household-wallet-info/', views.HouseHoldWalletInformation.as_view(), name='household_wallet_info'),
+    path('transaction-info/', views.ListUserTransactionInformation.as_view(), name='user_transaction_info'),
 ]

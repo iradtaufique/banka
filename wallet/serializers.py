@@ -127,3 +127,8 @@ class ListWalletInformationSerializer(serializers.ModelSerializer):
         wallet_owner['user_id'] = instance.user_id.full_name
         return wallet_owner
 
+class ListTransactionsInformationSerializer(serializers.ModelSerializer):
+    """serializer for listing transaction information"""
+    class Meta:
+        model = Transaction
+        fields = '__all__'
