@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     'allauth',
     'drf_yasg',
     'rest_framework',
-    'wallet',
+    'wallet.apps.WalletConfig',
     'corsheaders',
 ]
 

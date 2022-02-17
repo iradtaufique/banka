@@ -114,3 +114,21 @@ class AddMoneyTransactionSerializer(serializers.HyperlinkedModelSerializer):
         if float(data['amount']) < 0:
             raise serializers.ValidationError('The amount cannot be negative')
         return data
+
+
+class ListWalletInformationSerializer(serializers.ModelSerializer):
+    """serializer for listing wallet information"""
+    class Meta:
+        model = Wallet
+        fields = '__all__'
+
+    def to_representation(self, instance):
+        wallet_owner = super(ListWalletInformationSerializer,self).to_representation(instance)
+        wallet_owner['user_id'] = instance.user_id.full_name
+        return wallet_owner
+
+class ListTransactionsInformationSerializer(serializers.ModelSerializer):
+    """serializer for listing transaction information"""
+    class Meta:
+        model = Transaction
+        fields = '__all__'

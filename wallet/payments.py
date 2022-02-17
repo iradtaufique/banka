@@ -1,17 +1,29 @@
 import requests
 import math
 import random
+from django.conf import settings
+from decouple import config
+
 
 from django.http import HttpResponse
+from django.shortcuts import redirect
+# from django.urls import reverse
+from rest_framework.reverse import reverse
 
 
-def process_payment(name, amount):
-    hed = {'Authorization': 'Bearer ' + 'FLWSECK_TEST-5746d0af39f7689a2590de6454555385-X'}
+def myurl(request):
+    return request.build_absolute_uri(reverse('payment_response'))
+    # return redirect('payment_response')
+
+
+def process_payment(name, amount, request):
+    hed = {'Authorization': 'Bearer ' + config('API_SECRET_KEY')}
     data = {
         "tx_ref": '' + str(math.floor(1000000 + random.random() * 9000000)),
         "amount": str(amount),
         "currency": "RWF",
-        "redirect_url": "http://localhost:8000/wallet/callback",
+        # "redirect_url": "http://localhost:8000/wallet/callback",
+        "redirect_url": myurl(request=request),
         "payment_options": "card",
         "meta": {
             "consumer_id": 23,
@@ -31,9 +43,11 @@ def process_payment(name, amount):
     url = 'https://api.flutterwave.com/v3/payments'
     response = requests.post(url, json=data, headers=hed)
     response = response.json()
-    print('=============== response==============',response)
+    print('==== meee ==============', myurl(request))
+    print('=============== response==============', response)
     link = response['data']['link']
     return link
+
 
 def process_transfer(amount):
     data = {
