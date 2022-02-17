@@ -26,27 +26,12 @@ WALLET_TYPE = (
 )
 
 
-def generate_wallet_id_number():
-    all_saving_wallet = Wallet.objects.filter(wallet_type_id='SAVING').all().count()
-    all_hausehold_wallet = Wallet.objects.filter(wallet_type_id='HAUSEHOLD').all().count()
-    all_school_wallet = Wallet.objects.filter(wallet_type_id='SCHOOL').all().count()
-    year = datetime.now().year
-
-    code = 1
-    if not all_saving_wallet:
-        return 'SV-' + str(year) + '-' + str(code)
-
-    elif all_saving_wallet:
-        code = code + all_saving_wallet
-        return 'SV-' + str(year) + '-' + str(code)
-
-
 class Wallet(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
     amount = models.FloatField(default=0)
     # wallet_type_id = models.ForeignKey(WalletType, on_delete=models.CASCADE)
     wallet_type_id = models.CharField(max_length=30, choices=WALLET_TYPE)
-    wallet_number = models.CharField(max_length=30, default=generate_wallet_id_number)
+    wallet_number = models.CharField(max_length=200, null=True)
 
 
     def __str__(self):
@@ -68,21 +53,25 @@ class TransactionType(models.Model):
 
 class Transaction(models.Model):
     wallet_id = models.ForeignKey(Wallet, on_delete=models.CASCADE)
-    transaction_type_id = models.ForeignKey(TransactionType, on_delete=models.CASCADE)
+    # transaction_type_id = models.ForeignKey(TransactionType, on_delete=models.CASCADE)
+    transaction_type_id = models.CharField(max_length=40)
     date = models.DateField(auto_now=True)
     to = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name="send_to", verbose_name='Send to')
     description = models.TextField()
     amount = models.FloatField(blank=False, null=False)
 
     def __str__(self):
-        sender_email = self.wallet_id.user_id
-        send_from = User.objects.get(email=sender_email)
-        send_to = User.objects.get(email=self.to.user_id)
-        return 'from: ' + str(send_from) + 'to ' + str(send_to) + ' Type: ' + self.transaction_type_id.transaction_type
+        return f'{self.wallet_id.user_id}'
 
-    def validate_unique(self, exclude=None):
-        if self.amount < 0:
-            raise ValueError("The amount cannot be bellow zero")
+    # def __str__(self):
+    #     sender_email = self.wallet_id.user_id
+    #     send_from = User.objects.get(email=sender_email)
+    #     send_to = User.objects.get(email=self.to.user_id)
+    #     return 'from: ' + str(send_from) + 'to ' + str(send_to) + ' Type: ' + self.transaction_type_id.transaction_type
+    #
+    # def validate_unique(self, exclude=None):
+    #     if self.amount < 0:
+    #         raise ValueError("The amount cannot be bellow zero")
 
 
 class Notification(models.Model):

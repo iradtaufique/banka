@@ -17,4 +17,9 @@ urlpatterns = [
     path('add-money/', views.AddMoneyToWalletApiView.as_view(), name='add_money'),
     path('add-money-school/', views.AddMoneyToSchoolWallet.as_view(), name='add_money_to_school'),
     path('add-money-hausehold/', views.AddMoneyToHouseHoldWalletAPIView.as_view(), name='add_money_to_hausehold'),
+
+    # urls for listing users wallets information
+    path('saving-wallet-info/', views.SavingWalletInformation.as_view(), name='saving_wallet_info'),
+    path('school-wallet-info/', views.SchoolWalletInformation.as_view(), name='school_wallet_info'),
+    path('household-wallet-info/', views.HouseHoldWalletInformation.as_view(), name='household_wallet_info'),
 ]

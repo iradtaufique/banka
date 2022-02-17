@@ -15,7 +15,8 @@ from rest_framework.response import Response
 from authentication.models import User
 from authentication.utils import Util
 from wallet.serializers import WalletSerializer, WalletTypeSerializer, TransactionSerializer, TransactionListSerializer, \
-    NotificationListSerializer, NotificationUpdateSerializer, AddMoneyTransactionSerializer
+    NotificationListSerializer, NotificationUpdateSerializer, AddMoneyTransactionSerializer, \
+    ListWalletInformationSerializer
 from .models import Wallet as WalletModel, WalletType, Wallet, Transaction, TransactionType, Notification
 from .payments import process_payment, process_transfer
 from .permissions import IsWalletOwner
@@ -150,11 +151,6 @@ class AddMoneyToWalletApiView(generics.GenericAPIView):
             user_pending_transactions = []
 
             print(transaction_data_array)
-            print('my request is', request.scheme)
-            print('my host is', get_current_site(request))
-            my = reverse('payment_response')
-            print('hello', my)
-            print(str(request.scheme) + '://' +str(get_current_site(request)))
             for dic in transaction_data_array:
                 if dic.get('user') == self.request.user and dic.get('status') == 'pending':
                     user_pending_transactions.append(dic)
@@ -346,11 +342,21 @@ class AddMoneyToSchoolWallet(generics.GenericAPIView):
         serializer = AddMoneyTransactionSerializer(data=self.request.data)
         if serializer.is_valid():
             amount = serializer.validated_data['amount']
+            description = serializer.validated_data['description']
             current_saving_amount = Wallet.objects.get(user_id=self.request.user, wallet_type_id='SAVING').amount
+            current_saving_wallet = Wallet.objects.get(user_id=self.request.user, wallet_type_id='SAVING')
+            current_school_wallet = Wallet.objects.get(user_id=self.request.user, wallet_type_id='SCHOOL')
             current_school_amount = Wallet.objects.get(user_id=self.request.user, wallet_type_id='SCHOOL').amount
             current_saving_object_amount = Wallet.objects.filter(user_id=self.request.user, wallet_type_id='SAVING')
             current_school_object_amount = Wallet.objects.filter(user_id=self.request.user, wallet_type_id='SCHOOL')
 
+            # create transactions
+            Transaction.objects.create(
+                wallet_id=current_saving_wallet, transaction_type_id='Saving', to=current_school_wallet,
+                description=description, amount=amount
+            )
+
+            """check to see if amount to send is less than current amount in saving"""
             if amount <= current_saving_amount:
                 new_saving_amount = current_saving_amount - amount
                 new_school_amount = current_school_amount + amount
@@ -372,10 +378,21 @@ class AddMoneyToHouseHoldWalletAPIView(generics.GenericAPIView):
         serializer = AddMoneyTransactionSerializer(data=self.request.data)
         if serializer.is_valid():
             amount = serializer.validated_data['amount']
+            description = serializer.validated_data['description']
             current_saving_amount = Wallet.objects.get(user_id=self.request.user, wallet_type_id='SAVING').amount
+            current_saving_wallet = Wallet.objects.get(user_id=self.request.user, wallet_type_id='SAVING')
+            current_household_wallet = Wallet.objects.get(user_id=self.request.user, wallet_type_id='HAUSEHOLD')
             current_hausehold_amount = Wallet.objects.get(user_id=self.request.user, wallet_type_id='HAUSEHOLD').amount
             current_saving_object_amount = Wallet.objects.filter(user_id=self.request.user, wallet_type_id='SAVING')
             current_hausehold_object_amount = Wallet.objects.filter(user_id=self.request.user, wallet_type_id='HAUSEHOLD')
+
+            # create transactions
+            Transaction.objects.create(
+                wallet_id=current_saving_wallet, transaction_type_id='Saving', to=current_household_wallet,
+                description=description, amount=amount
+            )
+
+            """check to see if amount to send is less than current amount in saving"""
             if amount <= current_saving_amount:
                 new_saving_amount = current_saving_amount - amount
                 new_hausehold_amount = current_hausehold_amount + amount
@@ -393,5 +410,34 @@ def transfer_view(request):
     if response['data']:
         return HttpResponse('Transaction succeed')
     return HttpResponse('Transaction failed')
+
+
+class SavingWalletInformation(generics.ListAPIView):
+    """API View for displaying saving wallet information"""
+    serializer_class = ListWalletInformationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Wallet.objects.filter(user_id=self.request.user, wallet_type_id='SAVING')
+
+
+class SchoolWalletInformation(generics.ListAPIView):
+    """API View for displaying school wallet information"""
+    serializer_class = ListWalletInformationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Wallet.objects.filter(user_id=self.request.user, wallet_type_id='SCHOOL')
+
+
+class HouseHoldWalletInformation(generics.ListAPIView):
+    """API View for displaying household wallet information"""
+    serializer_class = ListWalletInformationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Wallet.objects.filter(user_id=self.request.user, wallet_type_id='HAUSEHOLD')
+
+
 
 
