@@ -10,6 +10,7 @@ urlpatterns = [
     path('send-money/', views.SendMoneyAPIView.as_view(), name="send_money"),
     path('update/<int:pk>', views.UpdateWalletAPIView.as_view(), name="update_wallet"),
     path('transactions-list/', views.ListTransactionAPIView.as_view(), name="List_of_transactions"),
+    path('transfert/', views.transfer_view, name="Transfer"),
     path('callback', views.payment_response, name="payment_response"),
 
     # adding money to wallet
