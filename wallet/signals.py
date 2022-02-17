@@ -76,16 +76,3 @@ def create_saving_wallet(sender, instance, created, **kwargs):
         Wallet.objects.create(user_id=instance, wallet_type_id='SAVING', amount=0, wallet_number=generate_saving_wallet_id_number())
         Wallet.objects.create(user_id=instance, wallet_type_id='SCHOOL', amount=0, wallet_number=generate_school_wallet_id_number())
         Wallet.objects.create(user_id=instance, wallet_type_id='HAUSEHOLD', amount=0, wallet_number=generate_hausehold_wallet_id_number())
-
-
-
-@receiver(post_save, sender=Wallet)
-def create_transactions(sender, instance, created, **kwargs):
-    """
-    A saving wallet will be created automatically for every new user added in the database
-    We need to save in wallet_type a 'saving' type before creating user.
-    Else, the app will crash
-    """
-    if created:
-        Transaction.objects.create(wallet_id=instance, transaction_type_id='Send', )
-
