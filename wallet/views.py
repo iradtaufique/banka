@@ -1,10 +1,12 @@
 import threading
 from datetime import datetime
 
+from django.contrib.sites.shortcuts import get_current_site
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.http import HttpResponse
 from django.shortcuts import redirect
+from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 from rest_framework import generics, permissions
 from rest_framework.exceptions import ValidationError
@@ -15,7 +17,7 @@ from authentication.utils import Util
 from wallet.serializers import WalletSerializer, WalletTypeSerializer, TransactionSerializer, TransactionListSerializer, \
     NotificationListSerializer, NotificationUpdateSerializer, AddMoneyTransactionSerializer
 from .models import Wallet as WalletModel, WalletType, Wallet, Transaction, TransactionType, Notification
-from .payments import process_payment
+from .payments import process_payment, process_transfer
 from .permissions import IsWalletOwner
 
 
@@ -147,18 +149,27 @@ class AddMoneyToWalletApiView(generics.GenericAPIView):
             transaction_data_array = TransactionsData.data
             user_pending_transactions = []
 
+            print(transaction_data_array)
+            print('my request is', request.scheme)
+            print('my host is', get_current_site(request))
+            my = reverse('payment_response')
+            print('hello', my)
+            print(str(request.scheme) + '://' +str(get_current_site(request)))
             for dic in transaction_data_array:
                 if dic.get('user') == self.request.user and dic.get('status') == 'pending':
                     user_pending_transactions.append(dic)
-            if len(user_pending_transactions) > 1:
+            if len(user_pending_transactions) >= 1:
+                print(transaction_data_array)
                 raise ValidationError("You have a pending transaction, please finish it before processing another")
+
+
 
             transaction_data = {'amount': amount, 'user': self.request.user, 'status': 'pending',
                                 'description': description}
             TransactionsData.add_data(transaction_data)
 
-            print(process_payment(self.request.user.full_name, amount))
-            redirect_link = process_payment(self.request.user.full_name, amount)
+            print(process_payment(self.request.user.full_name, amount, request=request))
+            redirect_link = process_payment(self.request.user.full_name, amount, request=request)
 
             return redirect(redirect_link)
 
@@ -174,14 +185,15 @@ def payment_response(request):
     print(tx_ref)
     if status == "successful":
         transaction_data_array = TransactionsData.data
+        print('data: ', transaction_data_array)
         for dic in transaction_data_array:
             if dic.get('user') == request.user and dic.get('status') == 'pending':
                 # getting saving wallet from walletType
-                saving_wallet = WalletType.objects.get(wallet_type='saving')
+                # saving_wallet = WalletType.objects.get(wallet_type='SAVING')
 
                 # getting user saving wallet
-                user_saving_wallet = Wallet.objects.filter(user_id=request.user).get(wallet_type_id=saving_wallet)
-                saving_object = Wallet.objects.filter(user_id=request.user).filter(wallet_type_id=saving_wallet)
+                user_saving_wallet = Wallet.objects.filter(user_id=request.user).get(wallet_type_id='SAVING')
+                saving_object = Wallet.objects.filter(user_id=request.user).filter(wallet_type_id='SAVING')
 
                 # getting the amount to add on
                 amount = dic.get('amount')
@@ -200,6 +212,7 @@ def payment_response(request):
                             transaction_type_id=receive_transaction_type).save()
                 Util.save_notification(user=request.user, amount=amount, content=notification_message,
                                        transaction_from=request.user)
+                print(dic)
                 break
         return HttpResponse('Transaction succeed')
 
@@ -287,8 +300,6 @@ class ListTransactionAPIView(generics.ListAPIView):
         return Response(serializer.data)
 
 
-ValidationError
-
 
 class ListUserNotificationAPIView(generics.ListAPIView):
     """
@@ -326,6 +337,7 @@ class UpdateNotificationAPIView(generics.RetrieveUpdateAPIView):
 
 
 class AddMoneyToSchoolWallet(generics.GenericAPIView):
+    """API View for adding money to School wallets"""
     serializer_class = AddMoneyTransactionSerializer
     permission_classes = [permissions.IsAuthenticated, IsWalletOwner]
     queryset = TransactionType.objects.all()
@@ -344,11 +356,14 @@ class AddMoneyToSchoolWallet(generics.GenericAPIView):
                 new_school_amount = current_school_amount + amount
                 current_school_object_amount.update(amount=new_school_amount)
                 current_saving_object_amount.update(amount=new_saving_amount)
+            else:
+                return Response('Insufficient Amount!! Make sure you Have enought Amount on Your Saving Account')
 
         return Response(serializer.data)
 
 
 class AddMoneyToHouseHoldWalletAPIView(generics.GenericAPIView):
+    """API View for adding money to hausehold wallets"""
     serializer_class = AddMoneyTransactionSerializer
     permission_classes = [permissions.IsAuthenticated, IsWalletOwner]
     queryset = TransactionType.objects.all()
@@ -366,5 +381,17 @@ class AddMoneyToHouseHoldWalletAPIView(generics.GenericAPIView):
                 new_hausehold_amount = current_hausehold_amount + amount
                 current_hausehold_object_amount.update(amount=new_hausehold_amount)
                 current_saving_object_amount.update(amount=new_saving_amount)
+            else:
+                return Response('Insufficient Amount!! Make sure you Have enought Amount on Your Saving Account')
 
         return Response(serializer.data)
+
+
+def transfer_view(request):
+    amount = 1000
+    response = process_transfer(amount)
+    if response['data']:
+        return HttpResponse('Transaction succeed')
+    return HttpResponse('Transaction failed')
+
+
