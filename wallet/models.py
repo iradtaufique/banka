@@ -42,9 +42,10 @@ class Transaction(models.Model):
     to = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name="send_to", verbose_name='Send to')
     description = models.TextField()
     amount = models.FloatField(blank=False, null=False)
+    transaction_id = models.CharField(max_length=40, unique=True)
 
     def __str__(self):
-        return f'{self.wallet_id.user_id}'
+        return f'{self.transaction_id}'
 
     # def __str__(self):
     #     sender_email = self.wallet_id.user_id

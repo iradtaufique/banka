@@ -9,7 +9,7 @@ from datetime import datetime
 
 
 def generate_saving_wallet_id_number():
-    all_saving_wallet = Wallet.objects.filter(wallet_type_id='SAVING').all().count()
+    all_saving_wallet = Wallet.objects.filter(wallet_type_id='saving').all().count()
     year = datetime.now().year
     code = 1
     if all_saving_wallet:
@@ -18,7 +18,7 @@ def generate_saving_wallet_id_number():
 
 
 def generate_school_wallet_id_number():
-    all_saving_wallet = Wallet.objects.filter(wallet_type_id='SCHOOL').all().count()
+    all_saving_wallet = Wallet.objects.filter(wallet_type_id='school').all().count()
     year = datetime.now().year
     code = 1
     if all_saving_wallet:
@@ -27,12 +27,20 @@ def generate_school_wallet_id_number():
 
 
 def generate_hausehold_wallet_id_number():
-    all_saving_wallet = Wallet.objects.filter(wallet_type_id='HAUSEHOLD').all().count()
+    all_saving_wallet = Wallet.objects.filter(wallet_type_id='household').all().count()
     year = datetime.now().year
     code = 1
     if all_saving_wallet:
         code = all_saving_wallet + code
         return 'HW-' + str(year) + '-' + str(code)
+
+
+def generate_transaction_id(id):
+    transactions_number = Transaction.objects.all().count
+    year = datetime.now().year
+    if transactions_number:
+        return 'TRANS' + str(year) + '-' + str(transactions_number) + str(id)
+    return 'TRANS' + str(year) + '-' + "0" + str(id)
 
 
 """ End of functions that generate wallet id numbers"""
@@ -73,6 +81,6 @@ def create_saving_wallet(sender, instance, created, **kwargs):
     Else, the app will crash
     """
     if created:
-        Wallet.objects.create(user_id=instance, wallet_type_id='SAVING', amount=0, wallet_number=generate_saving_wallet_id_number())
-        Wallet.objects.create(user_id=instance, wallet_type_id='SCHOOL', amount=0, wallet_number=generate_school_wallet_id_number())
-        Wallet.objects.create(user_id=instance, wallet_type_id='HAUSEHOLD', amount=0, wallet_number=generate_hausehold_wallet_id_number())
+        Wallet.objects.create(user_id=instance, wallet_type_id='saving', amount=0, wallet_number=generate_saving_wallet_id_number())
+        Wallet.objects.create(user_id=instance, wallet_type_id='school', amount=0, wallet_number=generate_school_wallet_id_number())
+        Wallet.objects.create(user_id=instance, wallet_type_id='household', amount=0, wallet_number=generate_hausehold_wallet_id_number())
