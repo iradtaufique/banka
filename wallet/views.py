@@ -1,12 +1,7 @@
 import threading
-from datetime import datetime
 
-from django.contrib.sites.shortcuts import get_current_site
-from django.db.models.signals import post_save
-from django.dispatch import receiver
 from django.http import HttpResponse
 from django.shortcuts import redirect
-from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 from rest_framework import generics, permissions
 from rest_framework.exceptions import ValidationError
@@ -158,7 +153,6 @@ def payment_response(request):
         print('data: ', transaction_data_array)
         for dic in transaction_data_array:
             if dic.get('user') == request.user and dic.get('status') == 'pending':
-
                 # getting user saving wallet
                 user_saving_wallet = Wallet.objects.filter(user_id=request.user).get(wallet_type_id='SAVING')
                 saving_object = Wallet.objects.filter(user_id=request.user).filter(wallet_type_id='SAVING')
@@ -267,7 +261,6 @@ class ListTransactionAPIView(generics.ListAPIView):
         return Response(serializer.data)
 
 
-
 class ListUserNotificationAPIView(generics.ListAPIView):
     """
     List all new notification of logged-in user
@@ -357,7 +350,8 @@ class AddMoneyToHouseHoldWalletAPIView(generics.GenericAPIView):
             current_household_wallet = Wallet.objects.get(user_id=self.request.user, wallet_type_id='HAUSEHOLD')
             current_hausehold_amount = Wallet.objects.get(user_id=self.request.user, wallet_type_id='HAUSEHOLD').amount
             current_saving_object_amount = Wallet.objects.filter(user_id=self.request.user, wallet_type_id='SAVING')
-            current_hausehold_object_amount = Wallet.objects.filter(user_id=self.request.user, wallet_type_id='HAUSEHOLD')
+            current_hausehold_object_amount = Wallet.objects.filter(user_id=self.request.user,
+                                                                    wallet_type_id='HAUSEHOLD')
 
             # create transactions
             Transaction.objects.create(
@@ -419,7 +413,3 @@ class ListUserTransactionInformation(generics.ListAPIView):
 
     def get_queryset(self):
         return Transaction.objects.filter(wallet_id__user_id=self.request.user)
-
-
-
-
