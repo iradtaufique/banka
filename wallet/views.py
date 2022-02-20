@@ -12,7 +12,7 @@ from authentication.utils import Util
 from wallet.serializers import WalletSerializer, TransactionSerializer, TransactionListSerializer, \
     NotificationListSerializer, NotificationUpdateSerializer, AddMoneyTransactionSerializer, \
     ListWalletInformationSerializer, ListTransactionsInformationSerializer
-from .models import Wallet as WalletModel, Wallet, Transaction, TransactionType, Notification
+from .models import Wallet as WalletModel, Wallet, Transaction, Notification
 from .payments import process_payment, process_transfer
 from .permissions import IsWalletOwner
 from .signals import generate_transaction_id
@@ -51,7 +51,7 @@ class CreateWalletAPIView(generics.GenericAPIView):
         wallet_type = self.request.data['wallet_type_id']
 
         # Verifying if there is sufficient found in saving wallet before moving the amount to the new wallet
-        if WalletModel.objects.get(user_id=user, wallet_type_id="saving").amount < float(
+        if WalletModel.objects.get(user_id=user, wallet_type_id="SAVING").amount < float(
                 self.request.data['amount']):
             raise ValidationError("Insufficient found in your saving account, please add money in it")
 
@@ -60,7 +60,7 @@ class CreateWalletAPIView(generics.GenericAPIView):
             raise ValidationError("This wallet type has been already created for this user")
         wallet_data.is_valid(raise_exception=True)
         try:
-            user_saving_wallet = WalletModel.objects.filter(user_id=user, wallet_type_id="saving")
+            user_saving_wallet = WalletModel.objects.filter(user_id=user, wallet_type_id="SAVING")
             user_saving_wallet_new_amount = float(user_saving_wallet.last().amount) - float(self.request.data['amount'])
             user_saving_wallet.update(amount=user_saving_wallet_new_amount)
             wallet_data.save(user_id=user)
@@ -106,7 +106,7 @@ class ListWalletAPIView(generics.ListAPIView):
 class AddMoneyToWalletApiView(generics.GenericAPIView):
     serializer_class = AddMoneyTransactionSerializer
     permission_classes = [permissions.IsAuthenticated, IsWalletOwner]
-    queryset = TransactionType.objects.all()
+    queryset = Transaction.objects.all()
 
     def post(self, request):
         serializer = AddMoneyTransactionSerializer(data=self.request.data)
@@ -164,14 +164,15 @@ def payment_response(request):
                 saving_object.update(amount=new_amount)
                 dic['status'] = 'completed'
                 notification_message = "You received money from an external source"
-                receive_transaction_type = TransactionType.objects.get(transaction_type="receive")
 
                 # saving the new transaction and a notification in database
+                last_transaction = Transaction.objects.last().pk
                 Transaction(to=user_saving_wallet,
                             wallet_id=user_saving_wallet,
                             description=dic.get('description'),
                             amount=amount,
-                            transaction_type_id=receive_transaction_type).save()
+                            transaction_type_id="receive",
+                            transaction_id=generate_transaction_id(last_transaction)).save()
                 Util.save_notification(user=request.user, amount=amount, content=notification_message,
                                        transaction_from=request.user)
                 print(dic)
@@ -188,7 +189,7 @@ def payment_response(request):
 class SendMoneyAPIView(generics.GenericAPIView):
     """
     Class for sending money to another user into the system
-    The sender must be authenticated and the owner of the wallet he use
+    The sender must be authenticated and the owner of the wallet he uses
     He should have enough money in the account he'll use to send money.
     """
     permission_classes = [permissions.IsAuthenticated, IsWalletOwner]
@@ -205,8 +206,8 @@ class SendMoneyAPIView(generics.GenericAPIView):
         send_to = transaction['to']
         print('userid: ', user)
         print('receiver id: ', send_to)
-        receiver_wallet = WalletModel.objects.get(user_id=send_to, wallet_type_id="saving")
-        sender_wallet = WalletModel.objects.get(user_id=user, wallet_type_id="saving")
+        sender_wallet = WalletModel.objects.get(user_id=user, wallet_type_id="SAVING")
+        receiver_wallet = WalletModel.objects.get(pk=send_to)
         sending_amount = float(transaction['amount'])
 
         # Verifying if the sender has sufficient found
@@ -221,22 +222,21 @@ class SendMoneyAPIView(generics.GenericAPIView):
         # removing money from the sender account
         sender_founds = sender_wallet.amount.__float__()
         sender_new_founds = sender_founds - sending_amount
-        WalletModel.objects.filter(user_id=user, wallet_type_id="saving").update(amount=sender_new_founds)
+        WalletModel.objects.filter(user_id=user, wallet_type_id="SAVING").update(amount=sender_new_founds)
 
         # adding money to the receiver account
         receiver_founds = receiver_wallet.amount
         receiver_new_founds = receiver_founds + sending_amount
-        WalletModel.objects.filter(user_id=send_to, wallet_type_id="saving").update(amount=receiver_new_founds)
-
-        # Retrieving transaction type into database
-        transaction_send_type = TransactionType.objects.get(transaction_type="send")
+        WalletModel.objects.filter(user_id=send_to, wallet_type_id="SAVING").update(amount=receiver_new_founds)
 
         # Adding a notification to user
         receiver_user = User.objects.get(pk=send_to)
         Util.save_notification(receiver_user, sending_amount, "You've received money", user)
 
         # saving transaction
-        serializer.save(wallet_id=sender_wallet, transaction_type_id=transaction_send_type, to=receiver_wallet)
+        last_transaction = Transaction.objects.last().pk
+        print('last transaction id: ', last_transaction)
+        serializer.save(wallet_id=sender_wallet, transaction_type_id="send", to=receiver_wallet, transaction_id=generate_transaction_id(last_transaction))
 
         return Response(serializer.data)
 
@@ -245,7 +245,7 @@ class ListTransactionAPIView(generics.ListAPIView):
     """
     List transactions for authenticated user,
     He must be authenticated and the owner of the wallet wallet_id
-    wallet_id represents the sender and to represents the receiver, transaction_type_id represents the type of transaction done
+    wallet_id represents the sender and to represent the receiver, transaction_type_id represents the type of transaction done
     """
     permission_classes = [permissions.IsAuthenticated, IsWalletOwner]
     serializer_class = TransactionListSerializer
@@ -255,7 +255,7 @@ class ListTransactionAPIView(generics.ListAPIView):
         user = self.request.user
         # Retrieving saving wallet type
 
-        user_wallet = WalletModel.objects.get(user_id=user.pk, wallet_type_id="saving")
+        user_wallet = WalletModel.objects.get(user_id=user.pk, wallet_type_id="SAVING")
         queryset = Transaction.objects.filter(wallet_id=user_wallet)
         serializer = TransactionListSerializer(queryset, many=True)
         return Response(serializer.data)
@@ -300,7 +300,7 @@ class AddMoneyToSchoolWallet(generics.GenericAPIView):
     """API View for adding money to School wallets"""
     serializer_class = AddMoneyTransactionSerializer
     permission_classes = [permissions.IsAuthenticated, IsWalletOwner]
-    queryset = TransactionType.objects.all()
+    queryset = Transaction.objects.all()
 
     def post(self, request):
         serializer = AddMoneyTransactionSerializer(data=self.request.data)
@@ -316,7 +316,7 @@ class AddMoneyToSchoolWallet(generics.GenericAPIView):
 
             # create transactions
             last_transaction = Transaction.objects.last().pk
-            print(generate_transaction_id(last_transaction))
+            print('genereated transaction id: ', generate_transaction_id(last_transaction))
             Transaction.objects.create(
                 wallet_id=current_saving_wallet, transaction_type_id='Saving', to=current_school_wallet,
                 description=description, amount=amount, transaction_id=generate_transaction_id(last_transaction)
@@ -329,7 +329,7 @@ class AddMoneyToSchoolWallet(generics.GenericAPIView):
                 current_school_object_amount.update(amount=new_school_amount)
                 current_saving_object_amount.update(amount=new_saving_amount)
             else:
-                return Response('Insufficient Amount!! Make sure you Have enaught Amount on Your Saving Account')
+                return Response('Insufficient Amount!! Make sure you Have enough Amount on Your Saving Account')
 
         return Response(serializer.data)
 
@@ -338,7 +338,7 @@ class AddMoneyToHouseHoldWalletAPIView(generics.GenericAPIView):
     """API View for adding money to hausehold wallets"""
     serializer_class = AddMoneyTransactionSerializer
     permission_classes = [permissions.IsAuthenticated, IsWalletOwner]
-    queryset = TransactionType.objects.all()
+    queryset = Transaction.objects.all()
 
     def post(self, request):
         serializer = AddMoneyTransactionSerializer(data=self.request.data)
@@ -354,9 +354,10 @@ class AddMoneyToHouseHoldWalletAPIView(generics.GenericAPIView):
                                                                     wallet_type_id='HAUSEHOLD')
 
             # create transactions
+            last_transaction = Transaction.objects.last().pk
             Transaction.objects.create(
                 wallet_id=current_saving_wallet, transaction_type_id='Saving', to=current_household_wallet,
-                description=description, amount=amount
+                description=description, amount=amount, transaction_id=generate_transaction_id(last_transaction)
             )
 
             """check to see if amount to send is less than current amount in saving"""

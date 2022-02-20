@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from authentication.utils import Util
-from wallet.models import Wallet, Transaction, TransactionType, Notification
+from wallet.models import Wallet, Transaction, Notification
 
 User = get_user_model()
 
@@ -26,7 +26,7 @@ class TransactionSerializer(serializers.HyperlinkedModelSerializer):
     """
     Serializer for Transaction
     """
-    to = serializers.PrimaryKeyRelatedField(queryset=Wallet.objects.filter(wallet_type_id="saving"))
+    to = serializers.PrimaryKeyRelatedField(queryset=Wallet.objects.filter(wallet_type_id="SAVING"))
 
     class Meta:
         model = Transaction
@@ -38,16 +38,6 @@ class TransactionSerializer(serializers.HyperlinkedModelSerializer):
         if float(data['amount']) < 0:
             raise serializers.ValidationError('The amount cannot be negative')
         return data
-
-
-class TransactionTypeSerializer(serializers.HyperlinkedModelSerializer):
-    """
-    Serializer for transactionType
-    """
-
-    class Meta:
-        model = TransactionType
-        fields = ['transaction_type']
 
 
 class TransactionListSerializer(serializers.HyperlinkedModelSerializer):
@@ -81,7 +71,7 @@ class AddMoneyTransactionSerializer(serializers.HyperlinkedModelSerializer):
     """
     Serializer for Transaction
     """
-    saving_wallet = Wallet.objects.filter(wallet_type_id="saving")
+    saving_wallet = Wallet.objects.filter(wallet_type_id="SAVING")
     # to = serializers.PrimaryKeyRelatedField(queryset=Wallet.objects.filter(wallet_type_id=saving_wallet))
 
     class Meta:

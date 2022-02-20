@@ -7,9 +7,9 @@ from authentication.models import User
 User = get_user_model()
 
 WalletType = (
-    ('saving', 'saving'),
-    ('household', 'household'),
-    ('school', 'school'),
+    ('SAVING', 'SAVING'),
+    ('HAUSEHOLD', 'HAUSEHOULD'),
+    ('SCHOOL', 'SCHOOL'),
 )
 
 
@@ -23,17 +23,6 @@ class Wallet(models.Model):
         return f'{self.user_id} {self.wallet_type_id}'
 
 
-class TransactionType(models.Model):
-    transaction_type = models.CharField(max_length=30, unique=True)
-
-    def __str__(self):
-        return self.transaction_type
-
-    def validate_unique(self, exclude=None):
-        if not self.transaction_type.isalpha():
-            raise ValueError("transaction type should be a alpha type")
-
-
 class Transaction(models.Model):
     wallet_id = models.ForeignKey(Wallet, on_delete=models.CASCADE)
     # transaction_type_id = models.ForeignKey(TransactionType, on_delete=models.CASCADE)
@@ -45,7 +34,7 @@ class Transaction(models.Model):
     transaction_id = models.CharField(max_length=40, unique=True)
 
     def __str__(self):
-        return f'{self.transaction_id}'
+        return f'{self.wallet_id}'
 
     # def __str__(self):
     #     sender_email = self.wallet_id.user_id
