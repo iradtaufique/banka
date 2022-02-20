@@ -229,12 +229,11 @@ class SendMoneyAPIView(generics.GenericAPIView):
         WalletModel.objects.filter(user_id=send_to, wallet_type_id="SAVING").update(amount=receiver_new_founds)
 
         # Adding a notification to user
-        receiver_user = User.objects.get(pk=send_to)
+        print('send to:', send_to)
+        receiver_user = User.objects.get(email=Wallet.objects.get(pk=send_to).user_id)
         Util.save_notification(receiver_user, sending_amount, "You've received money", user)
 
         # saving transaction
-        last_transaction = Transaction.objects.last().pk
-        print('last transaction id: ', last_transaction)
         serializer.save(wallet_id=sender_wallet, transaction_type_id="send", to=receiver_wallet, transaction_id=generate_transaction_id())
 
         return Response(serializer.data)
