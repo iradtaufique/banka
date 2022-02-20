@@ -166,13 +166,12 @@ def payment_response(request):
                 notification_message = "You received money from an external source"
 
                 # saving the new transaction and a notification in database
-                last_transaction = Transaction.objects.last().pk
                 Transaction(to=user_saving_wallet,
                             wallet_id=user_saving_wallet,
                             description=dic.get('description'),
                             amount=amount,
                             transaction_type_id="receive",
-                            transaction_id=generate_transaction_id(last_transaction)).save()
+                            transaction_id=generate_transaction_id()).save()
                 Util.save_notification(user=request.user, amount=amount, content=notification_message,
                                        transaction_from=request.user)
                 print(dic)
@@ -236,7 +235,7 @@ class SendMoneyAPIView(generics.GenericAPIView):
         # saving transaction
         last_transaction = Transaction.objects.last().pk
         print('last transaction id: ', last_transaction)
-        serializer.save(wallet_id=sender_wallet, transaction_type_id="send", to=receiver_wallet, transaction_id=generate_transaction_id(last_transaction))
+        serializer.save(wallet_id=sender_wallet, transaction_type_id="send", to=receiver_wallet, transaction_id=generate_transaction_id())
 
         return Response(serializer.data)
 
@@ -315,11 +314,10 @@ class AddMoneyToSchoolWallet(generics.GenericAPIView):
             current_school_object_amount = Wallet.objects.filter(user_id=self.request.user, wallet_type_id='SCHOOL')
 
             # create transactions
-            last_transaction = Transaction.objects.last().pk
-            print('genereated transaction id: ', generate_transaction_id(last_transaction))
+            print('genereated transaction id: ', generate_transaction_id())
             Transaction.objects.create(
                 wallet_id=current_saving_wallet, transaction_type_id='Saving', to=current_school_wallet,
-                description=description, amount=amount, transaction_id=generate_transaction_id(last_transaction)
+                description=description, amount=amount, transaction_id=generate_transaction_id()
             )
 
             """check to see if amount to send is less than current amount in saving"""
@@ -354,10 +352,9 @@ class AddMoneyToHouseHoldWalletAPIView(generics.GenericAPIView):
                                                                     wallet_type_id='HAUSEHOLD')
 
             # create transactions
-            last_transaction = Transaction.objects.last().pk
             Transaction.objects.create(
                 wallet_id=current_saving_wallet, transaction_type_id='Saving', to=current_household_wallet,
-                description=description, amount=amount, transaction_id=generate_transaction_id(last_transaction)
+                description=description, amount=amount, transaction_id=generate_transaction_id()
             )
 
             """check to see if amount to send is less than current amount in saving"""

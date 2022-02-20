@@ -16,10 +16,10 @@ class Wallet(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
     amount = models.FloatField(default=0)
     wallet_type_id = models.CharField(max_length=30, choices=WalletType)
-    wallet_number = models.CharField(max_length=200, null=True)
+    wallet_number = models.CharField(max_length=200, null=True, unique=True)
 
     def __str__(self):
-        return f'{self.user_id} {self.wallet_type_id}'
+        return f'{self.wallet_number}'
 
 
 class Transaction(models.Model):
@@ -32,7 +32,7 @@ class Transaction(models.Model):
     transaction_id = models.CharField(max_length=40, unique=True)
 
     def __str__(self):
-        return f'{self.wallet_id}'
+        return f'{self.transaction_id}'
 
 
 class Notification(models.Model):
@@ -47,3 +47,6 @@ class Notification(models.Model):
     sent = models.BooleanField(default=False)
     transaction_from = models.ForeignKey(User, on_delete=models.CASCADE, related_name="transaction_from")
     received_amount = models.FloatField()
+
+    def __str__(self):
+        return f'{self.content}'
