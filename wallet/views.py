@@ -14,10 +14,10 @@ from rest_framework.response import Response
 
 from authentication.models import User
 from authentication.utils import Util
-from wallet.serializers import WalletSerializer, WalletTypeSerializer, TransactionSerializer, TransactionListSerializer, \
+from wallet.serializers import WalletSerializer, TransactionSerializer, TransactionListSerializer, \
     NotificationListSerializer, NotificationUpdateSerializer, AddMoneyTransactionSerializer, \
     ListWalletInformationSerializer, ListTransactionsInformationSerializer
-from .models import Wallet as WalletModel, WalletType, Wallet, Transaction, TransactionType, Notification
+from .models import Wallet as WalletModel, Wallet, Transaction, TransactionType, Notification
 from .payments import process_payment, process_transfer
 from .permissions import IsWalletOwner
 
@@ -54,11 +54,8 @@ class CreateWalletAPIView(generics.GenericAPIView):
         user = self.request.user
         wallet_type = self.request.data['wallet_type_id']
 
-        # Retrieving saving wallet type
-        saving_wallet = WalletType.objects.get(wallet_type='saving')
-
         # Verifying if there is sufficient found in saving wallet before moving the amount to the new wallet
-        if WalletModel.objects.get(user_id=user, wallet_type_id=saving_wallet.pk).amount < float(
+        if WalletModel.objects.get(user_id=user, wallet_type_id="saving").amount < float(
                 self.request.data['amount']):
             raise ValidationError("Insufficient found in your saving account, please add money in it")
 
@@ -67,7 +64,7 @@ class CreateWalletAPIView(generics.GenericAPIView):
             raise ValidationError("This wallet type has been already created for this user")
         wallet_data.is_valid(raise_exception=True)
         try:
-            user_saving_wallet = WalletModel.objects.filter(user_id=user, wallet_type_id=saving_wallet.pk)
+            user_saving_wallet = WalletModel.objects.filter(user_id=user, wallet_type_id="saving")
             user_saving_wallet_new_amount = float(user_saving_wallet.last().amount) - float(self.request.data['amount'])
             user_saving_wallet.update(amount=user_saving_wallet_new_amount)
             wallet_data.save(user_id=user)
@@ -110,30 +107,6 @@ class ListWalletAPIView(generics.ListAPIView):
         return Response(serializer.data)
 
 
-class CreateWalletTypeAPIView(generics.GenericAPIView):
-    """
-    class to create wallet type,
-    In case a user want to create another wallet type
-    Different from existent wallet type
-    """
-    # permission_classes = [permissions.IsAuthenticated]
-    serializer_class = WalletTypeSerializer
-    queryset = WalletType.objects.all()
-
-    def post(self, request):
-        wallet_type = self.request.data
-        serializer = self.serializer_class(data=wallet_type)
-
-        # checking if user new wallet type does not exist in database
-        user_wallet_type = wallet_type['wallet_type']
-        if WalletType.objects.filter(wallet_type=user_wallet_type).exists():
-            raise ValidationError("This wallet type already exists, go ahead and create your wallet directly please")
-
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
-
-
 class AddMoneyToWalletApiView(generics.GenericAPIView):
     serializer_class = AddMoneyTransactionSerializer
     permission_classes = [permissions.IsAuthenticated, IsWalletOwner]
@@ -154,11 +127,11 @@ class AddMoneyToWalletApiView(generics.GenericAPIView):
             for dic in transaction_data_array:
                 if dic.get('user') == self.request.user and dic.get('status') == 'pending':
                     user_pending_transactions.append(dic)
+
+            # If there is pending transactions, we will cancel them before processing another one
             if len(user_pending_transactions) >= 1:
                 print(transaction_data_array)
-                raise ValidationError("You have a pending transaction, please finish it before processing another")
-
-
+                TransactionsData.data = []
 
             transaction_data = {'amount': amount, 'user': self.request.user, 'status': 'pending',
                                 'description': description}
@@ -184,8 +157,6 @@ def payment_response(request):
         print('data: ', transaction_data_array)
         for dic in transaction_data_array:
             if dic.get('user') == request.user and dic.get('status') == 'pending':
-                # getting saving wallet from walletType
-                # saving_wallet = WalletType.objects.get(wallet_type='SAVING')
 
                 # getting user saving wallet
                 user_saving_wallet = Wallet.objects.filter(user_id=request.user).get(wallet_type_id='SAVING')
@@ -232,15 +203,13 @@ class SendMoneyAPIView(generics.GenericAPIView):
     def post(self, request):
         transaction = self.request.data
         user = self.request.user
-        # Retrieving saving wallet type
-        saving_wallet = WalletType.objects.get(wallet_type='saving')
 
         # Getting data
-        sender_wallet = WalletModel.objects.get(user_id=user, wallet_type_id=saving_wallet.pk)
+        sender_wallet = WalletModel.objects.get(user_id=user, wallet_type_id="saving")
         serializer = self.serializer_class(data=transaction)
         serializer.is_valid(raise_exception=True)
         send_to = transaction['to']
-        receiver_wallet = WalletModel.objects.get(user_id=send_to, wallet_type_id=saving_wallet.pk)
+        receiver_wallet = WalletModel.objects.get(user_id=send_to, wallet_type_id="saving")
         sending_amount = float(transaction['amount'])
 
         # Verifying if the sender has sufficient found
@@ -260,7 +229,7 @@ class SendMoneyAPIView(generics.GenericAPIView):
         # adding money to the receiver account
         receiver_founds = receiver_wallet.amount
         receiver_new_founds = receiver_founds + sending_amount
-        WalletModel.objects.filter(user_id=send_to, wallet_type_id=saving_wallet.pk).update(amount=receiver_new_founds)
+        WalletModel.objects.filter(user_id=send_to, wallet_type_id="saving").update(amount=receiver_new_founds)
 
         # Retrieving transaction type into database
         transaction_send_type = TransactionType.objects.get(transaction_type="send")
@@ -288,9 +257,8 @@ class ListTransactionAPIView(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         user = self.request.user
         # Retrieving saving wallet type
-        saving_wallet = WalletType.objects.get(wallet_type='saving')
 
-        user_wallet = WalletModel.objects.get(user_id=user.pk, wallet_type_id=saving_wallet.pk)
+        user_wallet = WalletModel.objects.get(user_id=user.pk, wallet_type_id="saving")
         queryset = Transaction.objects.filter(wallet_id=user_wallet)
         serializer = TransactionListSerializer(queryset, many=True)
         return Response(serializer.data)

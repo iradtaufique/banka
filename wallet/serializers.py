@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from authentication.utils import Util
-from wallet.models import Wallet, WalletType, Transaction, TransactionType, Notification
+from wallet.models import Wallet, Transaction, TransactionType, Notification
 
 User = get_user_model()
 
@@ -11,7 +11,6 @@ class WalletSerializer(serializers.HyperlinkedModelSerializer):
     """
     Serializer for wallet
     """
-    wallet_type_id = serializers.PrimaryKeyRelatedField(queryset=WalletType.objects.all())
 
     class Meta:
         model = Wallet
@@ -23,26 +22,11 @@ class WalletSerializer(serializers.HyperlinkedModelSerializer):
         return data
 
 
-class WalletTypeSerializer(serializers.HyperlinkedModelSerializer):
-    """"
-    Serializer for walletType
-    """
-
-    class Meta:
-        model = WalletType
-        fields = ['wallet_type']
-
-
 class TransactionSerializer(serializers.HyperlinkedModelSerializer):
     """
     Serializer for Transaction
     """
-    # Before accessing WalletType model here, we need to check if its table exists to avoid having exceptions
-    table_name = "wallet_wallettype"
-    if Util.db_table_exists(table_name):
-        if WalletType.objects.filter(wallet_type="saving").exists():
-            saving_wallet = WalletType.objects.get(wallet_type="saving")
-            to = serializers.PrimaryKeyRelatedField(queryset=Wallet.objects.filter(wallet_type_id=saving_wallet))
+    to = serializers.PrimaryKeyRelatedField(queryset=Wallet.objects.filter(wallet_type_id="saving"))
 
     class Meta:
         model = Transaction
@@ -97,12 +81,8 @@ class AddMoneyTransactionSerializer(serializers.HyperlinkedModelSerializer):
     """
     Serializer for Transaction
     """
-    # Before accessing WalletType model here, we need to check if its table exists to avoid having exceptions
-    table_name = "wallet_wallettype"
-    if Util.db_table_exists(table_name):
-        if WalletType.objects.filter(wallet_type="saving").exists():
-            saving_wallet = WalletType.objects.get(wallet_type="saving")
-            # to = serializers.PrimaryKeyRelatedField(queryset=Wallet.objects.filter(wallet_type_id=saving_wallet))
+    saving_wallet = Wallet.objects.filter(wallet_type_id="saving")
+    # to = serializers.PrimaryKeyRelatedField(queryset=Wallet.objects.filter(wallet_type_id=saving_wallet))
 
     class Meta:
         model = Transaction

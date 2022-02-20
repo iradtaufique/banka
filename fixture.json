@@ -1,12 +1,5 @@
 [
   {
-    "model": "wallet.wallettype",
-    "pk": 1,
-    "fields": {
-     "wallet_type": "saving"
-    }
-  },
-  {
     "model": "wallet.transactiontype",
     "pk": 1,
     "fields": {

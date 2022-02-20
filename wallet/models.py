@@ -4,40 +4,23 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from authentication.models import User
 
-
 User = get_user_model()
 
-
-class WalletType(models.Model):
-    wallet_type = models.CharField(max_length=30, unique=True)
-
-    def __str__(self):
-        return self.wallet_type + ' ' + self.id.__str__()
-
-    def validate_unique(self, exclude=None):
-        if not self.wallet_type.isalpha():
-            raise ValueError("wallet type should be a alpha type")
-
-
-WALLET_TYPE = (
-    ('SAVING', 'SAVING'),
-    ('HAUSEHOLD', 'HAUSEHOLD'),
-    ('SCHOOL', 'SCHOOL'),
+WalletType = (
+    ('saving', 'saving'),
+    ('household', 'household'),
+    ('school', 'school'),
 )
 
 
 class Wallet(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
     amount = models.FloatField(default=0)
-    # wallet_type_id = models.ForeignKey(WalletType, on_delete=models.CASCADE)
-    wallet_type_id = models.CharField(max_length=30, choices=WALLET_TYPE)
+    wallet_type_id = models.CharField(max_length=30, choices=WalletType)
     wallet_number = models.CharField(max_length=200, null=True)
-
 
     def __str__(self):
         return f'{self.user_id} {self.wallet_type_id}'
-
-
 
 
 class TransactionType(models.Model):
