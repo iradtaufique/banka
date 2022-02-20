@@ -20,6 +20,7 @@ from wallet.serializers import WalletSerializer, TransactionSerializer, Transact
 from .models import Wallet as WalletModel, Wallet, Transaction, TransactionType, Notification
 from .payments import process_payment, process_transfer
 from .permissions import IsWalletOwner
+from .signals import generate_transaction_id
 
 
 class TransactionsData:
@@ -205,11 +206,13 @@ class SendMoneyAPIView(generics.GenericAPIView):
         user = self.request.user
 
         # Getting data
-        sender_wallet = WalletModel.objects.get(user_id=user, wallet_type_id="saving")
         serializer = self.serializer_class(data=transaction)
         serializer.is_valid(raise_exception=True)
         send_to = transaction['to']
+        print('userid: ', user)
+        print('receiver id: ', send_to)
         receiver_wallet = WalletModel.objects.get(user_id=send_to, wallet_type_id="saving")
+        sender_wallet = WalletModel.objects.get(user_id=user, wallet_type_id="saving")
         sending_amount = float(transaction['amount'])
 
         # Verifying if the sender has sufficient found
@@ -224,7 +227,7 @@ class SendMoneyAPIView(generics.GenericAPIView):
         # removing money from the sender account
         sender_founds = sender_wallet.amount.__float__()
         sender_new_founds = sender_founds - sending_amount
-        WalletModel.objects.filter(user_id=user, wallet_type_id=1).update(amount=sender_new_founds)
+        WalletModel.objects.filter(user_id=user, wallet_type_id="saving").update(amount=sender_new_founds)
 
         # adding money to the receiver account
         receiver_founds = receiver_wallet.amount
@@ -319,9 +322,11 @@ class AddMoneyToSchoolWallet(generics.GenericAPIView):
             current_school_object_amount = Wallet.objects.filter(user_id=self.request.user, wallet_type_id='SCHOOL')
 
             # create transactions
+            last_transaction = Transaction.objects.last().pk
+            print(generate_transaction_id(last_transaction))
             Transaction.objects.create(
                 wallet_id=current_saving_wallet, transaction_type_id='Saving', to=current_school_wallet,
-                description=description, amount=amount
+                description=description, amount=amount, transaction_id=generate_transaction_id(last_transaction)
             )
 
             """check to see if amount to send is less than current amount in saving"""
