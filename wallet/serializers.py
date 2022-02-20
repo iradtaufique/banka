@@ -1,7 +1,6 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from authentication.utils import Util
 from wallet.models import Wallet, Transaction, Notification
 
 User = get_user_model()
@@ -72,6 +71,7 @@ class AddMoneyTransactionSerializer(serializers.HyperlinkedModelSerializer):
     Serializer for Transaction
     """
     saving_wallet = Wallet.objects.filter(wallet_type_id="SAVING")
+
     # to = serializers.PrimaryKeyRelatedField(queryset=Wallet.objects.filter(wallet_type_id=saving_wallet))
 
     class Meta:
@@ -88,17 +88,20 @@ class AddMoneyTransactionSerializer(serializers.HyperlinkedModelSerializer):
 
 class ListWalletInformationSerializer(serializers.ModelSerializer):
     """serializer for listing wallet information"""
+
     class Meta:
         model = Wallet
         fields = '__all__'
 
     def to_representation(self, instance):
-        wallet_owner = super(ListWalletInformationSerializer,self).to_representation(instance)
+        wallet_owner = super(ListWalletInformationSerializer, self).to_representation(instance)
         wallet_owner['user_id'] = instance.user_id.full_name
         return wallet_owner
 
+
 class ListTransactionsInformationSerializer(serializers.ModelSerializer):
     """serializer for listing transaction information"""
+
     class Meta:
         model = Transaction
         fields = '__all__'

@@ -1,7 +1,6 @@
-from datetime import datetime
-
-from django.db import models
 from django.contrib.auth import get_user_model
+from django.db import models
+
 from authentication.models import User
 
 User = get_user_model()
@@ -25,7 +24,6 @@ class Wallet(models.Model):
 
 class Transaction(models.Model):
     wallet_id = models.ForeignKey(Wallet, on_delete=models.CASCADE)
-    # transaction_type_id = models.ForeignKey(TransactionType, on_delete=models.CASCADE)
     transaction_type_id = models.CharField(max_length=40)
     date = models.DateField(auto_now=True)
     to = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name="send_to", verbose_name='Send to')
@@ -35,16 +33,6 @@ class Transaction(models.Model):
 
     def __str__(self):
         return f'{self.wallet_id}'
-
-    # def __str__(self):
-    #     sender_email = self.wallet_id.user_id
-    #     send_from = User.objects.get(email=sender_email)
-    #     send_to = User.objects.get(email=self.to.user_id)
-    #     return 'from: ' + str(send_from) + 'to ' + str(send_to) + ' Type: ' + self.transaction_type_id.transaction_type
-    #
-    # def validate_unique(self, exclude=None):
-    #     if self.amount < 0:
-    #         raise ValueError("The amount cannot be bellow zero")
 
 
 class Notification(models.Model):
